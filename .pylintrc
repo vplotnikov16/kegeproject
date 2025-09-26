@@ -1,0 +1,25 @@
+[MASTER]
+ignore = migrations
+extension-pkg-allow-list = flask,flask_sqlalchemy,flask_migrate,dotenv,alembic,sqlalchemy
+
+[MESSAGES CONTROL]
+disable =
+    C0114,  # Missing module docstring
+    C0115,  # Missing class docstring
+    C0116,  # Missing function docstring
+    R0903,  # Too few public methods
+    C0103,  # Invalid name (для миграций)
+    W0613,  # Unused argument
+    W0621,  # Redefining name from outer scope
+    C0415,  # Import outside toplevel
+    W0611,  # Unused import
+
+[FORMAT]
+max-line-length = 100
+
+[BASIC]
+good-names =
+    db,
+    app,
+    config,
+    _
