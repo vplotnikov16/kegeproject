@@ -4,6 +4,7 @@ extension-pkg-allow-list = flask,flask_sqlalchemy,flask_migrate,dotenv,alembic,s
 
 [MESSAGES CONTROL]
 disable =
+    R1705,  # Отключение проверок ситуаций, когда после return есть недостижимый elif
     C0114,  # Missing module docstring
     C0115,  # Missing class docstring
     C0116,  # Missing function docstring
