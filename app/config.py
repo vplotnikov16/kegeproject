@@ -49,7 +49,7 @@ def parse_env_var(var: EnvEnum):
     elif var.type is bool:
         return res.lower() in ('1', 'on', 'true', 'yes')
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class Config:
