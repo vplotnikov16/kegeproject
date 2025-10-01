@@ -37,9 +37,9 @@ def register():
 
     # Проверки на ошибку с кодом 400
     if _is_err_400(data):
-        return jsonify({'error': 'Не указан "login" и/или "password"'}), 400
+        return jsonify({'error': 'Не указано имя пользователя и/или пароль'}), 400
     if User.query.filter_by(login=data['login']).first():
-        return jsonify({'error': 'Пользователь с таким "login" уже существует в системе'}), 400
+        return jsonify({'error': 'Пользователь с таким именем пользователя уже существует в системе'}), 400
 
     user = User(login=data['login'])
     user.set_password(data['password'])
@@ -54,11 +54,11 @@ def login():
 
     # Проверка на ошибку с кодом 400
     if _is_err_400(data):
-        return jsonify({'error': 'Не указан "login" и/или "password"'}), 400
+        return jsonify({'error': 'Не указано имя пользователя и/или пароль'}), 400
 
     user = User.query.filter_by(login=data['login']).first()
     # Проверка на ошибку с кодом 401
     if _is_err_401(data, user):
-        return jsonify({'error': 'Неправильный "login" и/или "password"'}), 401
+        return jsonify({'error': 'Неправильное имя пользователя и/или пароль'}), 401
 
     return jsonify({'message': 'Успешно'}), 200
