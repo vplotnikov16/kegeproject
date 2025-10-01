@@ -36,7 +36,8 @@ def register():
         password = request.form.get("password")
 
         if User.query.filter_by(username=username).first():
-            return render_template("register.html", error="Пользователь с таким именем пользователя уже существует в системе")
+            error = "Пользователь с таким именем пользователя уже существует в системе"
+            return render_template("register.html", error=error)
 
         user = User(username=username)
         user.set_password(password)
