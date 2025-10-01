@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block content %}
+<h1>Авторизация</h1>
+<form method="post">
+    <label>Имя пользователя:</label>
+    <input type="text" name="username" required>
+    <br>
+    <label>Пароль:</label>
+    <input type="password" name="password" required>
+    <br>
+    <button type="submit">Войти</button>
+</form>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+{% endblock %}
