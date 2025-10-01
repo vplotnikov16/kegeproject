@@ -1,5 +1,7 @@
+werkzeug
 Flask
 Flask-SQLAlchemy
 python-dotenv
 alembic
 flask-migrate
+flask-login

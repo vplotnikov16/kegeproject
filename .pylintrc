@@ -16,7 +16,7 @@ disable =
     W0611,  # Unused import
 
 [FORMAT]
-max-line-length = 100
+max-line-length = 120
 
 [BASIC]
 good-names =
