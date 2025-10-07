@@ -50,7 +50,6 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        print(f'reg {username}')
         login_user(user, remember=form.remember_me.data)
         return redirect(url_for('pages.index'))
 
