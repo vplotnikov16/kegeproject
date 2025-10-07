@@ -1,3 +1,5 @@
+wtforms
+flask-wtf
 werkzeug
 Flask
 Flask-SQLAlchemy
