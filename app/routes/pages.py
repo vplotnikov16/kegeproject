@@ -73,3 +73,8 @@ def profile():
 @login_required
 def stats():
     return render_template('stats.html', user=current_user)
+
+
+@pages_bp.route('/tasks')
+def tasks():
+    return render_template('tasks.html')
