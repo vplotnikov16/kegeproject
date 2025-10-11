@@ -31,11 +31,11 @@ log = logging.getLogger(__name__).info
 
 def log_system_info():
     """Выводит базовую информацию о системе и Python."""
-    log(f'Исполнение скрипта: {Path(__file__).resolve()}')
-    log(f'CWD: {os.getcwd()}')
-    log(f'Python: {platform.python_implementation()} {platform.python_version()}')
-    log(f'Интерпретатор: {sys.executable}')
-    log(f'ОС: {platform.system()} {platform.release()} ({platform.architecture()[0]})')
+    log('Исполнение скрипта: %s', Path(__file__).resolve())
+    log('CWD: %s', os.getcwd())
+    log('Python: %s %s', platform.python_implementation(), platform.python_version())
+    log('Интерпретатор: %s', sys.executable)
+    log('ОС: %s %s (%s)', platform.system(), platform.release(), platform.architecture()[0])
 
 
 def is_inside_any_virtualenv() -> bool:
@@ -62,12 +62,12 @@ def is_running_from_project_venv(project_root: Path) -> bool:
 def create_project_venv(project_root: Path) -> None:
     """Создаёт .venv в корне проекта."""
     venv = get_project_venv_path(project_root)
-    log(f'Создаю виртуальное окружение проекта по пути {venv}...')
+    log('Создаю виртуальное окружение проекта по пути %s...', venv)
     try:
         subprocess.check_call([sys.executable, '-m', 'venv', str(venv)], cwd=str(project_root))
         log('Виртуальное окружение проекта успешно создано.')
     except subprocess.CalledProcessError as e:
-        log(f'Ошибка при создании виртуального окружения: {e}')
+        log('Ошибка при создании виртуального окружения: %s', e)
         raise
 
 
@@ -85,14 +85,14 @@ def install_missing_requirements(python_executable: Path, requirements_file: Pat
             check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
         log('pip обновлён до последней версии.')
-    except Exception as e:
-        log(f'Не удалось обновить pip: {e}')
+    except subprocess.CalledProcessError as e:
+        log('Не удалось обновить pip: %s', e)
 
     if not requirements_file.exists():
-        log(f'{requirements_file} не найден, установка зависимостей пропущена.')
+        log('%s не найден, установка зависимостей пропущена.', requirements_file)
         return
 
-    log(f'Проверяю зависимости из {requirements_file}...')
+    log('Проверяю зависимости из %s...', requirements_file)
 
     # Получаем список уже установленных пакетов
     try:
@@ -102,7 +102,7 @@ def install_missing_requirements(python_executable: Path, requirements_file: Pat
         )
         installed_packages = {line.split('==')[0].lower() for line in result.stdout.splitlines() if '==' in line}
     except subprocess.CalledProcessError as e:
-        log(f'Не удалось получить список установленных пакетов: {e}')
+        log('Не удалось получить список установленных пакетов: %s', e)
         installed_packages = set()
 
     # Читаем requirements.txt
@@ -111,22 +111,21 @@ def install_missing_requirements(python_executable: Path, requirements_file: Pat
         line = line.strip()
         if not line or line.startswith('#'):
             continue
-        # убираем версию, берем только имя пакета
         lib_name = re.split(r'[<>=!]', line)[0].strip().lower()
         requirements.append((lib_name, line))
 
     all_success = True
     for lib_name, full_spec in requirements:
         if lib_name in installed_packages:
-            continue  # уже установлено
-        log(f'Устанавливаю {full_spec}...')
+            continue
+        log('Устанавливаю %s...', full_spec)
         try:
             subprocess.run(
                 [str(python_executable), '-m', 'pip', 'install', full_spec],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
         except subprocess.CalledProcessError as e:
-            log(f'Ошибка при установке {full_spec}: {e}')
+            log('Ошибка при установке %s: %s', full_spec, e)
             all_success = False
 
     if all_success:
@@ -137,7 +136,7 @@ def install_missing_requirements(python_executable: Path, requirements_file: Pat
 
 def reexec_this_script_with_python(python_executable: Path):
     """Перезапускает текущий скрипт с другим интерпретатором Python."""
-    log(f'Перезапуск скрипта внутри виртуального окружения проекта. Использую интерпретатор {python_executable}...')
+    log('Перезапуск скрипта внутри виртуального окружения проекта. Использую интерпретатор %s...', python_executable)
     script = Path(__file__).resolve()
     args = [str(python_executable), str(script)] + sys.argv[1:]
     os.chdir(str(script.parent))
@@ -162,16 +161,16 @@ def ensure_executing_from_project_venv(project_root: Path) -> None:
 def run_run_py(project_root: Path):
     run_script = project_root / 'run.py'
     if not run_script.exists():
-        log(f'Ошибка: run.py не найден в {project_root}.')
+        log('Ошибка: run.py не найден в %s.', project_root)
         sys.exit(2)
 
-    log(f'Запуск run.py через {sys.executable}...')
+    log('Запуск run.py через %s...', sys.executable)
     cmd = [sys.executable, str(run_script)] + sys.argv[1:]
     try:
         subprocess.check_call(cmd)
         log('run.py завершился успешно.')
     except subprocess.CalledProcessError as e:
-        log(f'run.py завершился с ошибкой: {e}')
+        log('run.py завершился с ошибкой: %s', e)
         raise
 
 
