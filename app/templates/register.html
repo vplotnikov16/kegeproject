@@ -1,24 +1,45 @@
 {% extends "base.html" %}
 
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/auth.css') }}"/>
+{% endblock %}
+
 {% block title %}Регистрация{% endblock %}
 
 {% block content %}
 <h1>Регистрация</h1>
-<form method="post">
-  <label>Имя пользователя:</label>
-  <input type="text" name="username" required>
-  <br>
-  <label>Пароль:</label>
-  <input type="password" name="password" required>
-  <br>
-  <button type="submit">Зарегистрироваться</button>
+<form class="auth-form" action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>{{ form.last_name(class="form-control", type="last_name", placeholder="Фамилия") }}</p>
+    {% for error in form.last_name.errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    <p>{{ form.first_name(class="form-control", type="first_name", placeholder="Имя") }}</p>
+    {% for error in form.first_name.errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    <p>{{ form.middle_name(class="form-control", type="middle_name", placeholder="Отчество") }}</p>
+    {% for error in form.middle_name.errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    <p>{{ form.password(class="form-control", type="password", placeholder="Пароль") }}</p>
+    {% for error in form.password.errors %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    <div class="checkbox">
+        <label>{{ form.remember_me() }} {{ form.remember_me.label }}</label>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <div class="btn-submit">
+        {{ form.submit(class="btn btn-primary", type="submit", method="post") }}
+    </div>
 </form>
-
-{% if error %}
-  <p style="color:red;">{{ error }}</p>
-{% endif %}
-
-{% if message %}
-  <p style="color:green;">{{ message }}</p>
-{% endif %}
 {% endblock %}
