@@ -15,3 +15,29 @@
     font-weight: 500;
     color: #fff; /* чтобы видно было на navbar-dark */
 }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  flex-shrink: 0;
+}
+
+.div-content {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.div-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+}
+
