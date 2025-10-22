@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import login_user, login_required, logout_user, current_user
 
 from app.forms.auth import RegisterForm, LoginForm
-from app.models.user import User
+from app.models import User
 from app.extensions import db
 
 pages_bp = Blueprint("pages", __name__)
