@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app
 from app.config import Config
@@ -50,7 +51,7 @@ def db(app):
     try:
         _db.session.execute(text("PRAGMA foreign_keys=ON"))
         _db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         _db.session.rollback()
 
     yield _db
