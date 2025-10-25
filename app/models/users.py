@@ -8,14 +8,40 @@ from app.utils.name_utils import get_username
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(120), unique=True, nullable=False)
-    first_name = db.Column(db.String(20), nullable=False)
-    last_name = db.Column(db.String(40), nullable=False)
-    middle_name = db.Column(db.String(20), nullable=True)
-    password_hash = db.Column(db.String(256), nullable=False)
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+    username = db.Column(
+        db.String(120),
+        unique=True,
+        nullable=False,
+    )
+    first_name = db.Column(
+        db.String(20),
+        nullable=False,
+    )
+    last_name = db.Column(
+        db.String(40),
+        nullable=False,
+    )
+    middle_name = db.Column(
+        db.String(20),
+        nullable=True,
+    )
+    password_hash = db.Column(
+        db.String(256),
+        nullable=False,
+    )
 
-    roles = db.relationship('Role', secondary='user_roles', back_populates='users')
+    # при удалении пользователя строки в user_roles удалятся (работает через FK ondelete)
+    roles = db.relationship(
+        'Role',
+        secondary='user_roles',
+        back_populates='users',
+        # passive_deletes=True нужен для доверия алхимии к физическому каскаду СУБД
+        passive_deletes=True,
+    )
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

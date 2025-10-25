@@ -1,0 +1,6 @@
+pytest
+pytest-cov
+pytest-flask
+alembic
+Flask-Migrate
+coverage
