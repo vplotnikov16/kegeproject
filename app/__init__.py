@@ -28,4 +28,7 @@ def create_app(config_class=Config):
     from app.routes.pages import pages_bp
     app.register_blueprint(pages_bp, url_prefix='/')
 
+    from app.routes.tasks import tasks_bp
+    app.register_blueprint(tasks_bp, url_prefix='/tasks')
+
     return app
