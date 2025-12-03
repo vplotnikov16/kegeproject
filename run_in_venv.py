@@ -1,6 +1,7 @@
 import logging
 import os
 import platform
+import re
 import subprocess
 import sys
 import shutil
@@ -17,9 +18,35 @@ def setup_logging() -> None:
     )
 
 
-info = logging.getLogger(__name__).info
-debug = logging.getLogger(__name__).debug
-warning = logging.getLogger(__name__).warning
+logger = logging.getLogger(__name__)
+
+info = logger.info
+warning = logger.warning
+debug = logger.debug
+
+_LEVEL_MAP = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARN": logging.WARNING,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
+
+_LEVEL_RE = re.compile(r'^\s*(?:\[(?P<bracket>[A-Za-z]+)\]|\b(?P<word>[A-Za-z]+):?)')
+
+
+def _detect_line_level(line: str, default_level: int) -> int:
+    """
+    Попытаться распознать уровень из начала строки, иначе вернуть default_level.
+    Форматы, которые понимаем: "DEBUG ...", "INFO: ...", "[WARNING] ..." и т.п.
+    """
+    m = _LEVEL_RE.match(line)
+    if not m:
+        return default_level
+    tag = (m.group("bracket") or m.group("word") or "").upper()
+    return _LEVEL_MAP.get(tag, default_level)
+
 
 def log_system_brief() -> None:
     info("OS: %s %s (%s)", platform.system(), platform.release(), platform.architecture()[0])
@@ -95,9 +122,11 @@ def get_project_root() -> Path:
     return Path(__file__).resolve().parent
 
 
-def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None) -> subprocess.CompletedProcess:
+def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None,
+                       default_level: int = logging.DEBUG) -> subprocess.CompletedProcess:
     """
-    Запускает процесс и стримит stdout/stderr в реальном времени в текущую консоль.
+    Запускает процесс и стримит stdout/stderr в текущий logger.
+    Каждая строка анализируется на предмет префикса уровня и логируется соответствующим уровнем.
     Возвращает subprocess.CompletedProcess с накопленным stdout.
     """
     proc = subprocess.Popen(
@@ -105,22 +134,26 @@ def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optiona
         cwd=str(cwd) if cwd else None,
         env=env,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.STDOUT,  # упрощаем: объединяем потоки
         text=True,
         bufsize=1,
         universal_newlines=True,
     )
+
     out_lines: List[str] = []
     if proc.stdout is not None:
         try:
-            for line in proc.stdout:
-                sys.stdout.write(line)
-                sys.stdout.flush()
-                out_lines.append(line)
+            for raw_line in proc.stdout:
+                # сохраняем и логируем построчно
+                line = raw_line.rstrip("\n")
+                out_lines.append(line + "\n")
+                level = _detect_line_level(line, default_level)
+                logger.log(level, line)
         except KeyboardInterrupt:
             proc.kill()
             proc.wait()
             raise
+
     return_code = proc.wait()
     completed = subprocess.CompletedProcess(args, return_code, stdout="".join(out_lines))
     return completed
@@ -128,25 +161,23 @@ def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optiona
 
 def log_command(func):
     """
-    Декоратор, который логирует команду перед выполнением.
+    Декоратор, логирует команду перед выполнением. Поддерживает произвольные kwargs (например default_level).
     """
-
-    def wrapper(args: List[str], cwd: Optional[Path] = None):
-        debug("CMD: %s", " ".join(str(a) for a in args))
-        proc = func(args, cwd=cwd)
+    def wrapper(args: List[str], cwd: Optional[Path] = None, **kwargs):
+        logger.debug("CMD: %s", " ".join(str(a) for a in args))
+        proc = func(args, cwd=cwd, **kwargs)
         if proc.returncode != 0:
             raise subprocess.CalledProcessError(proc.returncode, args, output=proc.stdout)
         return proc
-
     return wrapper
 
 
 @log_command
-def run_cmd_capture(args: List[str], cwd: Optional[Path] = None, check: bool = True) -> subprocess.CompletedProcess:
+def run_cmd_capture(args: List[str], cwd: Optional[Path] = None, default_level: int = logging.DEBUG) -> subprocess.CompletedProcess:
     """
-    Запускает команду, возвращает CompletedProcess, захватывая вывод
+    Запускает команду, возвращает CompletedProcess. default_level указывает исходный уровень для строк без префикса.
     """
-    return _stream_subprocess(args, cwd=cwd)
+    return _stream_subprocess(args, cwd=cwd, default_level=default_level)
 
 
 def get_pip_version(python_executable: Path) -> Optional[str]:
@@ -191,8 +222,8 @@ def poetry_lock(python_executable: Path, project_root: Path) -> subprocess.Compl
     return run_cmd_capture(args, cwd=project_root)
 
 
-def poetry_install(python_executable: Path, project_root: Path, no_root: bool = True, is_dev_env: bool = True) -> subprocess.CompletedProcess:
-    args = ["python", "-m", "poetry", "install", "--no-interaction", "--sync"]
+def poetry_sync(python_executable: Path, project_root: Path, no_root: bool = True, is_dev_env: bool = True) -> subprocess.CompletedProcess:
+    args = [str(python_executable), "-m", "poetry", "sync", "--no-interaction"]
     if no_root:
         args.append("--no-root")
     if not is_dev_env:
@@ -241,18 +272,17 @@ def main() -> None:
 
     # По умолчанию ставим dev-окружение
     is_dev_env = True
-    if is_dev_env:
-        logging.getLogger(__name__).setLevel(logging.DEBUG)
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
 
     maybe_upgrade_pip(python_exec)
     ensure_poetry_installed(python_exec)
     poetry_env_use(python_exec)
     poetry_lock(python_exec, project_root)
-    poetry_install(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
+    poetry_sync(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
     venv_path = get_poetry_venv_path(python_exec, project_root)
     venv_python = get_python_in_venv(venv_path)
     if not venv_python.exists():
-        proc_retry = poetry_install(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
+        proc_retry = poetry_sync(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
         if proc_retry.returncode != 0:
             raise subprocess.CalledProcessError(proc_retry.returncode, proc_retry.args)
         venv_path = get_poetry_venv_path(python_exec, project_root)
