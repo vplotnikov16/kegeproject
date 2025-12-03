@@ -1,7 +1,7 @@
 {% extends "tasks/tasks_base.html" %}
 
 {% block head %}
-<script src="https://cdn.tiny.cloud/1/ipeq3zsrf944zfld4kvz5o5xqgz7owj48o46aslsmtfyvj0v/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/TinyMCE/tinymce.min.js') }}" referrerpolicy="origin" crossorigin="anonymous"></script>
 {% endblock %}
 
 
@@ -40,7 +40,7 @@ tinymce.init({
   selector: '#statement_html',   // внедряем в все <textarea>
   menubar: false,
   plugins: 'lists link image table code',
-  language_url: '/static/js/TinyMCE/langs/ru.js',
+  language_url: '{{ url_for('static', filename='js/TinyMCE/langs/ru.js') }}',
   language: 'ru',
   license_key: 'gpl',
   toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | table | bullist numlist | link image | code',
