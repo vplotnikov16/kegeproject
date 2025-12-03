@@ -1,187 +1,268 @@
-"""
-run_in_venv.py
-----------------
-Запускает проект через виртуальное окружение .venv в корне проекта.
-Создает .venv, если его нет, устанавливает недостающие зависимости и запускает run.py.
-"""
-
 import logging
 import os
 import platform
 import subprocess
 import sys
+import shutil
 from pathlib import Path
+from typing import List, Optional
 
 
-def setup_logging(log_file: str = 'run_in_venv.log'):
-    """Настраивает логирование в консоль и файл."""
+def setup_logging() -> None:
     logging.basicConfig(
         level=logging.INFO,
-        format='[run_in_venv] %(asctime)s %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler(log_file, encoding='utf-8'),
-        ],
+        format="%(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
 
-log = logging.getLogger(__name__).info
+info = logging.getLogger(__name__).info
+debug = logging.getLogger(__name__).debug
+warning = logging.getLogger(__name__).warning
+
+def log_system_brief() -> None:
+    info("OS: %s %s (%s)", platform.system(), platform.release(), platform.architecture()[0])
+    info("CWD: %s", os.getcwd())
+    info("Python: %s %s (%s)", platform.python_implementation(), platform.python_version(), sys.executable)
 
 
-def log_system_info():
-    """Выводит базовую информацию о системе и Python."""
-    log('Исполнение скрипта: %s', Path(__file__).resolve())
-    log('CWD: %s', os.getcwd())
-    log('Python: %s %s', platform.python_implementation(), platform.python_version())
-    log('Интерпретатор: %s', sys.executable)
-    log('ОС: %s %s (%s)', platform.system(), platform.release(), platform.architecture()[0])
+def in_venv() -> bool:
+    # True если мы запущены внутри virtualenv / venv
+    return hasattr(sys, "real_prefix") or getattr(sys, "base_prefix", None) != getattr(sys, "prefix", None)
 
 
-def is_inside_any_virtualenv() -> bool:
-    """Проверяет, находится ли интерпретатор в виртуальном окружении."""
-    return (hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
-
-
-def get_project_venv_path(project_root: Path) -> Path:
-    return project_root / '.venv'
-
-
-def get_python_inside_venv(venv_path: Path) -> Path:
-    return venv_path / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-
-
-def is_running_from_project_venv(project_root: Path) -> bool:
-    venv = get_project_venv_path(project_root).resolve()
-    if not venv.exists():
-        return False
-    exe = Path(sys.executable).resolve()
-    return venv in exe.parents
-
-
-def create_project_venv(project_root: Path) -> None:
-    """Создаёт .venv в корне проекта."""
-    venv = get_project_venv_path(project_root)
-    log('Создаю виртуальное окружение проекта по пути %s...', venv)
-    try:
-        subprocess.check_call([sys.executable, '-m', 'venv', str(venv)], cwd=str(project_root))
-        log('Виртуальное окружение проекта успешно создано.')
-    except subprocess.CalledProcessError as e:
-        log('Ошибка при создании виртуального окружения: %s', e)
-        raise
-
-
-def install_missing_requirements(python_executable: Path, requirements_file: Path):
+def _check_python_candidate(path: Path) -> Optional[Path]:
     """
-    Устанавливает только недостающие зависимости из requirements.txt.
-    Логирует каждое действие.
+    Попытка выполнить `python --version` через кандидат, вернуть Path если успешно.
     """
-    import re
-
-    log('Обновляю pip до последней версии...')
+    if not path or not path.exists():
+        return None
     try:
-        subprocess.run(
-            [str(python_executable), '-m', 'pip', 'install', '--upgrade', 'pip'],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-        )
-        log('pip обновлён до последней версии.')
-    except subprocess.CalledProcessError as e:
-        log('Не удалось обновить pip: %s', e)
+        proc = run_cmd_capture([str(path), "--version"])
+        if proc.returncode == 0:
+            return path
+    except subprocess.CalledProcessError:
+        return None
+    except FileNotFoundError:
+        return None
+    return None
 
-    if not requirements_file.exists():
-        log('%s не найден, установка зависимостей пропущена.', requirements_file)
-        return
 
-    log('Проверяю зависимости из %s...', requirements_file)
+def get_system_python_executable() -> Path:
+    current = Path(sys.executable)
+    if not in_venv():
+        return current
 
-    # Получаем список уже установленных пакетов
-    try:
-        result = subprocess.run(
-            [str(python_executable), '-m', 'pip', 'freeze'],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-        installed_packages = {line.split('==')[0].lower() for line in result.stdout.splitlines() if '==' in line}
-    except subprocess.CalledProcessError as e:
-        log('Не удалось получить список установленных пакетов: %s', e)
-        installed_packages = set()
+    warning("run_in_venv.py запущен из виртуального окружения, пытаюсь найти глобальный python и использовать его для poetry...")
 
-    # Читаем requirements.txt
-    requirements = []
-    for line in requirements_file.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if not line or line.startswith('#'):
-            continue
-        lib_name = re.split(r'[<>=!]', line)[0].strip().lower()
-        requirements.append((lib_name, line))
+    base = getattr(sys, "base_prefix", None) or getattr(sys, "real_prefix", None)
+    candidates: List[Path] = []
 
-    all_success = True
-    for lib_name, full_spec in requirements:
-        if lib_name in installed_packages:
-            continue
-        log('Устанавливаю %s...', full_spec)
+    if base:
+        base_path = Path(base)
+        if os.name == "nt":
+            candidates.append(base_path / "python.exe")
+            candidates.append(base_path / "Scripts" / "python.exe")
+        else:
+            candidates.append(base_path / "bin" / "python3")
+            candidates.append(base_path / "bin" / "python")
+
+    for name in ("python3", "python"):
+        which_path = shutil.which(name)
+        if which_path:
+            candidates.append(Path(which_path))
+
+    if os.name != "nt":
+        for p in ("/usr/bin/python3", "/usr/local/bin/python3", "/usr/bin/python"):
+            candidates.append(Path(p))
+
+    # проверяем кандидатов
+    for cand in candidates:
+        valid = _check_python_candidate(cand)
+        if valid:
+            info("Использую системный python для работы с poetry: %s", str(valid))
+            return valid
+
+    warning("Не нашел системный python, буду работать с тем, который запустил текущее исполнение: %s", str(current))
+    return current
+
+
+def get_project_root() -> Path:
+    """
+    Путь к корню проекта
+    """
+    return Path(__file__).resolve().parent
+
+
+def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None) -> subprocess.CompletedProcess:
+    """
+    Запускает процесс и стримит stdout/stderr в реальном времени в текущую консоль.
+    Возвращает subprocess.CompletedProcess с накопленным stdout.
+    """
+    proc = subprocess.Popen(
+        [str(a) for a in args],
+        cwd=str(cwd) if cwd else None,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        universal_newlines=True,
+    )
+    out_lines: List[str] = []
+    if proc.stdout is not None:
         try:
-            subprocess.run(
-                [str(python_executable), '-m', 'pip', 'install', full_spec],
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-            )
-        except subprocess.CalledProcessError as e:
-            log('Ошибка при установке %s: %s', full_spec, e)
-            all_success = False
-
-    if all_success:
-        log('Проверка зависимостей завершена, виртуальное окружение проекта настроено.')
-    else:
-        log('Некоторые зависимости не смогли установиться.')
-
-
-def reexec_this_script_with_python(python_executable: Path):
-    """Перезапускает текущий скрипт с другим интерпретатором Python."""
-    log('Перезапуск скрипта внутри виртуального окружения проекта. Использую интерпретатор %s...', python_executable)
-    script = Path(__file__).resolve()
-    args = [str(python_executable), str(script)] + sys.argv[1:]
-    os.chdir(str(script.parent))
-    os.execv(str(python_executable), args)
+            for line in proc.stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                out_lines.append(line)
+        except KeyboardInterrupt:
+            proc.kill()
+            proc.wait()
+            raise
+    return_code = proc.wait()
+    completed = subprocess.CompletedProcess(args, return_code, stdout="".join(out_lines))
+    return completed
 
 
-def ensure_executing_from_project_venv(project_root: Path) -> None:
-    if is_running_from_project_venv(project_root):
-        log('Текущий процесс уже выполняется из виртуального окружения проекта.')
-        return
+def log_command(func):
+    """
+    Декоратор, который логирует команду перед выполнением.
+    """
 
-    venv_path = get_project_venv_path(project_root)
-    exists = venv_path.exists()
-    if not exists:
-        create_project_venv(project_root)
+    def wrapper(args: List[str], cwd: Optional[Path] = None):
+        debug("CMD: %s", " ".join(str(a) for a in args))
+        proc = func(args, cwd=cwd)
+        if proc.returncode != 0:
+            raise subprocess.CalledProcessError(proc.returncode, args, output=proc.stdout)
+        return proc
 
-    venv_python = get_python_inside_venv(venv_path)
-    install_missing_requirements(venv_python, project_root / 'requirements.txt')
-    reexec_this_script_with_python(venv_python)
+    return wrapper
 
 
-def run_run_py(project_root: Path):
-    run_script = project_root / 'run.py'
-    if not run_script.exists():
-        log('Ошибка: run.py не найден в %s.', project_root)
-        sys.exit(2)
+@log_command
+def run_cmd_capture(args: List[str], cwd: Optional[Path] = None, check: bool = True) -> subprocess.CompletedProcess:
+    """
+    Запускает команду, возвращает CompletedProcess, захватывая вывод
+    """
+    return _stream_subprocess(args, cwd=cwd)
 
-    log('Запуск run.py через %s...', sys.executable)
-    cmd = [sys.executable, str(run_script)] + sys.argv[1:]
+
+def get_pip_version(python_executable: Path) -> Optional[str]:
+    """
+    Версия pip
+    """
     try:
-        subprocess.check_call(cmd)
-        log('run.py завершился успешно.')
-    except subprocess.CalledProcessError as e:
-        log('run.py завершился с ошибкой: %s', e)
-        raise
+        proc = run_cmd_capture([str(python_executable), "-m", "pip", "--version"])
+        return proc.stdout.strip() if proc.stdout else None
+    except subprocess.CalledProcessError:
+        return None
 
 
-def main():
+def maybe_upgrade_pip(python_executable: Path) -> subprocess.CompletedProcess:
+    """
+    Попытка обновить pip
+    """
+    cmd = [str(python_executable), "-m", "pip", "install", "--upgrade", "pip"]
+    return run_cmd_capture(cmd)
+
+
+def ensure_poetry_installed(python_executable: Path) -> subprocess.CompletedProcess:
+    """
+    Устанавливает poetry если его нет
+    """
+    # проверим наличие poetry через python -m poetry --version
+    try:
+        return run_cmd_capture([str(python_executable), "-m", "poetry", "--version"])
+    except subprocess.CalledProcessError:
+        pass
+    cmd = [str(python_executable), "-m", "pip", "install", "--upgrade", "poetry"]
+    return run_cmd_capture(cmd)
+
+
+def poetry_env_use(python_executable: Path) -> subprocess.CompletedProcess:
+    cmd = [str(python_executable), "-m", "poetry", "env", "use", str(python_executable)]
+    return run_cmd_capture(cmd)
+
+
+def poetry_lock(python_executable: Path, project_root: Path) -> subprocess.CompletedProcess:
+    args = [str(python_executable), "-m", "poetry", "lock"]
+    return run_cmd_capture(args, cwd=project_root)
+
+
+def poetry_install(python_executable: Path, project_root: Path, no_root: bool = True, is_dev_env: bool = True) -> subprocess.CompletedProcess:
+    args = ["python", "-m", "poetry", "install", "--no-interaction", "--sync"]
+    if no_root:
+        args.append("--no-root")
+    if not is_dev_env:
+        # не устанавливаем dev-зависимости
+        args.append("--without=dev")
+    return run_cmd_capture(args, cwd=project_root)
+
+
+def get_poetry_venv_path(python_executable: Path, project_root: Path) -> Path:
+    """
+    Возвращает путь к виртуальному окружению poetry для проекта
+    """
+    proc = run_cmd_capture([str(python_executable), "-m", "poetry", "env", "info", "-p"], cwd=project_root)
+    v = proc.stdout.strip() if proc.stdout else ""
+    return Path(v)
+
+
+def get_python_in_venv(venv_path: Path) -> Path:
+    """
+    Возвращает путь к python внутри указанного virtualenv
+    """
+    if os.name == "nt":
+        return venv_path / "Scripts" / "python.exe"
+    return venv_path / "bin" / "python"
+
+
+def run_in_venv(venv_python: Path, project_root: Path) -> int:
+    """
+    Запускает run.py через python виртуального окружения
+    """
+    run_script = project_root / "run.py"
+    if not run_script.exists():
+        raise SystemExit(2)
+    cmd = [str(venv_python), str(run_script)] + sys.argv[1:]
+    debug("CMD: %s", " ".join(cmd))
+    return subprocess.call(cmd, cwd=str(project_root))
+
+
+def main() -> None:
     setup_logging()
-    log_system_info()
-    project_root = Path(__file__).resolve().parent
-    ensure_executing_from_project_venv(project_root)
-    install_missing_requirements(Path(sys.executable), project_root / 'requirements.txt')
-    run_run_py(project_root)
+    log_system_brief()
+    project_root = get_project_root()
+    python_exec = get_system_python_executable()
+    pip_ver = get_pip_version(python_exec)
+    debug("pip: %s", pip_ver or "unknown")
+
+    # По умолчанию ставим dev-окружение
+    is_dev_env = True
+    if is_dev_env:
+        logging.getLogger(__name__).setLevel(logging.DEBUG)
+
+    maybe_upgrade_pip(python_exec)
+    ensure_poetry_installed(python_exec)
+    poetry_env_use(python_exec)
+    poetry_lock(python_exec, project_root)
+    poetry_install(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
+    venv_path = get_poetry_venv_path(python_exec, project_root)
+    venv_python = get_python_in_venv(venv_path)
+    if not venv_python.exists():
+        proc_retry = poetry_install(python_exec, project_root, no_root=True, is_dev_env=is_dev_env)
+        if proc_retry.returncode != 0:
+            raise subprocess.CalledProcessError(proc_retry.returncode, proc_retry.args)
+        venv_path = get_poetry_venv_path(python_exec, project_root)
+        venv_python = get_python_in_venv(venv_path)
+    if not venv_python.exists():
+        raise SystemExit(3)
+    rc = run_in_venv(venv_python, project_root)
+    if rc != 0:
+        raise SystemExit(rc)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
