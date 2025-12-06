@@ -22,30 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Установка Python и Poetry
+        uses: ./.github/actions/setup-venv
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip and poetry caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-pip-${{ hashFiles('**/pyproject.toml','**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-pip-
-
-      - name: Install Poetry and project dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade poetry
-          export POETRY_VIRTUALENVS_IN_PROJECT=true
-          poetry install --no-interaction --no-ansi
-
-      - name: Run DB tests
+      - name: Тесты БД
         env:
           FLASK_ENV: testing
-        run: |
-          poetry run pytest -q tests/db
+        run: poetry run pytest -q tests/db
