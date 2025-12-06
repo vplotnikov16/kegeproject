@@ -1,6 +1,6 @@
-from flask import Blueprint, send_file, abort, flash, redirect, url_for
 from io import BytesIO
 
+from flask import Blueprint, send_file, abort, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from app.extensions import db
