@@ -16,6 +16,7 @@ flask-migrate = "^4.1.0"
 flask-login = "^0.6.3"
 python-dotenv = "^1.2.1"
 poetry-core = "^2.2.1"
+beautifulsoup4 = "^4.10.0"
 
 [tool.poetry.group.dev.dependencies]
 pylint = ">=3.0.0"

@@ -1,4 +1,5 @@
 from app.extensions import db
+from app.utils.date_utils import utcnow
 
 
 class TaskAttachment(db.Model):
@@ -13,10 +14,12 @@ class TaskAttachment(db.Model):
         db.ForeignKey('tasks.id', ondelete='CASCADE'),
         nullable=False,
     )
-    path = db.Column(
-        db.String,
-        nullable=False,
-    )
+
+    filename = db.Column(db.String(32), nullable=False)
+    content_type = db.Column(db.String(120), nullable=True)
+    size = db.Column(db.Integer, nullable=True)
+    data = db.Column(db.LargeBinary, nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     # passive_deletes=True для доверия физическому каскаду СУБД
     task = db.relationship(
