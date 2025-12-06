@@ -1,5 +1,6 @@
 from flask import Flask
 
+from .cli import seed
 from .config import Config
 from .extensions import db, migrate, login_manager
 from .models import User
@@ -30,5 +31,11 @@ def create_app(config_class=Config):
 
     from app.routes.tasks import tasks_bp
     app.register_blueprint(tasks_bp, url_prefix='/tasks')
+
+    from app.routes.attachments import attachments_bp
+    app.register_blueprint(attachments_bp, url_prefix='/attachments')
+
+    # регистрация cli
+    app.cli.add_command(seed)
 
     return app

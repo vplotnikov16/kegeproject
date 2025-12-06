@@ -8,5 +8,4 @@ class NewTaskForm(FlaskForm):
     statement_html = TextAreaField('Текст задачи')
     answer = StringField('Ответ на задачу')
     attachments = MultipleFileField("Файлы к задаче")
-    submit = SubmitField('Зарегистрироваться')
-
+    submit = SubmitField('Добавить задачу')
