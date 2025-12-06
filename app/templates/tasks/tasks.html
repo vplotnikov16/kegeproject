@@ -1,0 +1,80 @@
+{% extends "tasks/tasks_base.html" %}
+
+{% block head %}
+<script defer src="{{ url_for('static', filename='js/tasks/tasks.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks/tasks.css') }}">
+{% endblock %}
+
+{% block title %}Задания{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">Задания</h1>
+            {% if current_user.is_authenticated and (current_user.roles|selectattr("id","in",[0,2])|list) %}
+            <a href="{{ url_for('tasks.new_task') }}" class="btn btn-primary">Добавить задачу</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header">Выбрать номера КИМ</div>
+                <div class="card-body">
+                    <form id="kim-form" onsubmit="return false;">
+                        <div class="mb-3">
+                            <label for="kim-select" class="form-label">Номера КИМ (можно выбрать несколько)</label>
+                            <select id="kim-select" class="form-select" multiple size="8" aria-label="Выбор КИМ">
+                                {# генерируем 1..27 опции как раньше #}
+                                {% for i in range(1,28) %}
+                                <option value="{{ i }}">{{ i }}. {{ loop.index0 == i-1 and '' }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Выберите хотя бы один номер. Для множественного выбора — Ctrl/Cmd+click или Shift.</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button id="btn-load-by-kim" class="btn btn-secondary">Показать задачи по выбранным КИМ</button>
+                            <button id="btn-clear-results" class="btn btn-outline-secondary">Очистить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Показать задачу по идентификатору</div>
+                <div class="card-body">
+                    <form id="id-form" onsubmit="return false;">
+                        <div class="mb-3">
+                            <label for="task_id_input" class="form-label">ID задачи (один или несколько через запятую)</label>
+                            <input id="task_id_input" type="text" class="form-control" placeholder="Например: 12 или 12,15,34">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="btn-get-task" class="btn btn-secondary">Показать задачу</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка результатов -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    Результаты
+                </div>
+
+                {# Контейнер с собственным скроллом; внутри будем рендерить список карточек #}
+                <div class="card-body p-0">
+                    <div id="results" class="results-container p-3">
+                        <div class="text-muted">Результаты поиска появятся здесь</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

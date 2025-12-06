@@ -8,4 +8,4 @@ load_dotenv()
 app = create_app(Config)
 
 if __name__ == '__main__':
-    app.run(debug=app.config[EnvEnum.debug])
+    app.run(debug=app.config[EnvEnum.DEBUG])

@@ -42,6 +42,18 @@ class User(UserMixin, db.Model):
         # passive_deletes=True нужен для доверия алхимии к физическому каскаду СУБД
         passive_deletes=True,
     )
+    tasks = db.relationship(
+        'Task',
+        back_populates='author',
+        passive_deletes=True
+    )
+    avatar = db.relationship(
+        'UserAvatar',
+        back_populates='user',
+        uselist=False,
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+    )
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
@@ -68,3 +80,12 @@ class User(UserMixin, db.Model):
             username = f'{base_username}{count}'
 
         return username
+
+    @property
+    def is_admin(self) -> bool:
+        """
+        Проверка, является ли пользователь администратором.
+        Предполагаем, что роль администратора имеет id = 0.
+        """
+        # FIXME: с id == 0 такой костыль, надо однажды это как-нибудь исправить
+        return any(role.id == 0 for role in self.roles)
