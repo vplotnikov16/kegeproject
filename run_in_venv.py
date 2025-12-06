@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import List, Optional
 
 
-def setup_logging(format='%(levelname)s: %(message)s') -> None:
+def setup_logging(log_format='%(levelname)s: %(message)s') -> None:
     logging.basicConfig(
         level=logging.INFO,
-        format=format,
+        format=log_format,
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
