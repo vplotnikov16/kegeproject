@@ -42,6 +42,18 @@ class User(UserMixin, db.Model):
         # passive_deletes=True нужен для доверия алхимии к физическому каскаду СУБД
         passive_deletes=True,
     )
+    tasks = db.relationship(
+        'Task',
+        back_populates='author',
+        passive_deletes=True
+    )
+    avatar = db.relationship(
+        'UserAvatar',
+        back_populates='user',
+        uselist=False,
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+    )
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
