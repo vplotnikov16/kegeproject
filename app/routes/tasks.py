@@ -114,15 +114,7 @@ def view_task(task_id):
     if task is None:
         abort(404)
 
-    # --- Проверка прав ---
-    is_admin = (
-            current_user.is_authenticated
-            and any(role.id == 0 for role in current_user.roles)
-    )
-
-    # Пока только админ может редактировать. Позже сюда можно добавить:
-    # or (current_user.id == task.author_id)
-    can_edit = is_admin
+    can_edit = current_user.is_admin or current_user.id == task.author.id
 
     # Форма удаления (только если пользователь имеет право)
     delete_form = ConfirmForm() if can_edit else None
@@ -142,11 +134,9 @@ def delete_task(task_id):
     if task is None:
         abort(404)
 
-    is_admin = (
-            current_user.is_authenticated
-            and any(role.id == 0 for role in current_user.roles)
-    )
-    if not is_admin:
+    can_delete = current_user.is_admin or current_user.id == task.author.id
+
+    if not can_delete:
         abort(403)
 
     form = ConfirmForm()
@@ -166,11 +156,9 @@ def delete_task(task_id):
 def edit_task(task_id):
     task = Task.query.get_or_404(task_id)
 
-    is_admin = (
-            current_user.is_authenticated
-            and any(role.id == 0 for role in current_user.roles)
-    )
-    if not is_admin:
+    can_edit = current_user.is_admin or current_user.id == task.author.id
+
+    if not can_edit:
         abort(403)
 
     form = NewTaskForm()

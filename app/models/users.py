@@ -80,3 +80,12 @@ class User(UserMixin, db.Model):
             username = f'{base_username}{count}'
 
         return username
+
+    @property
+    def is_admin(self) -> bool:
+        """
+        Проверка, является ли пользователь администратором.
+        Предполагаем, что роль администратора имеет id = 0.
+        """
+        # FIXME: с id == 0 такой костыль, надо однажды это как-нибудь исправить
+        return any(role.id == 0 for role in self.roles)
