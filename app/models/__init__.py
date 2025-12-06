@@ -7,3 +7,4 @@ from .variants import Variant
 from .variant_tasks import VariantTask
 from .attempts import Attempt
 from .attempt_answers import AttemptAnswer
+from .user_avatars import UserAvatar

@@ -61,15 +61,3 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('pages.index'))
-
-
-@pages_bp.route('/profile')
-@login_required
-def profile():
-    return render_template('profile.html', user=current_user)
-
-
-@pages_bp.route('/stats')
-@login_required
-def stats():
-    return render_template('stats.html', user=current_user)
