@@ -28,7 +28,7 @@ def test_task_attachment_and_variant_task_cascade(db):
     _db.session.add(t)
     _db.session.commit()
 
-    ta = TaskAttachment(task_id=t.id, path='/tmp/x.png')
+    ta = TaskAttachment(task_id=t.id, filename='x.png', content_type='image/png', data=b'')
     _db.session.add(ta)
 
     v = Variant()
@@ -107,7 +107,7 @@ def test_role_crud_and_user_assignment(db):
     """
     Создание роли и привязка к пользователю через user_roles
     """
-    role = Role(name='admin')
+    role = Role(name='admin_test')
     user = User(username='user_admin', first_name='A', last_name='B', password_hash='h')
     _db.session.add_all([role, user])
     _db.session.commit()
@@ -117,12 +117,12 @@ def test_role_crud_and_user_assignment(db):
 
     u = User.query.filter_by(username='user_admin').first()
     assert len(u.roles) == 1
-    assert u.roles[0].name == 'admin'
+    assert u.roles[0].name == 'admin_test'
 
     # UPDATE
     role.name = 'superadmin'
     _db.session.commit()
-    assert Role.query.first().name == 'superadmin'
+    assert Role.query.filter_by(id=role.id).first().name == 'superadmin'
 
     # DELETE
     _db.session.delete(role)

@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import List, Optional
 
 
-def setup_logging() -> None:
+def setup_logging(format='%(levelname)s: %(message)s') -> None:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(levelname)s: %(message)s",
+        format=format,
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
@@ -164,12 +164,14 @@ def log_command(func):
     """
     Декоратор, логирует команду перед выполнением. Поддерживает произвольные kwargs (например default_level).
     """
+
     def wrapper(args: List[str], cwd: Optional[Path] = None, **kwargs):
         logger.debug("CMD: %s", " ".join(str(a) for a in args))
         proc = func(args, cwd=cwd, **kwargs)
         if proc.returncode != 0:
             raise subprocess.CalledProcessError(proc.returncode, args, output=proc.stdout)
         return proc
+
     return wrapper
 
 

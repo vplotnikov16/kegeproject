@@ -4,7 +4,7 @@ EXPECTED_TABLES = {
     'users', 'roles', 'user_roles',
     'tasks', 'task_attachments',
     'variants', 'variant_tasks',
-    'attempts', 'attempt_answers'
+    'attempts', 'attempt_answers', 'user_avatars'
 }
 
 
