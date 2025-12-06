@@ -22,6 +22,9 @@ def _register_blueprints(flask_app):
     from app.routes.profile import profile_bp
     flask_app.register_blueprint(profile_bp, url_prefix='/profile')
 
+    from app.routes.users import users_bp
+    flask_app.register_blueprint(users_bp, url_prefix='/users')
+
 
 def create_app(config_class=Config):
     flask_app = Flask(__name__)

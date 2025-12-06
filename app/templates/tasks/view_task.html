@@ -12,10 +12,6 @@
                     <div class="text-muted">КИМ №{{ task.number }}</div>
                 </div>
 
-                {# Кнопки редактирования / удаления.
-                Лучше вычислить can_edit в view (например: current_user.id == task.owner_id or user_is_admin).
-                Если can_edit не передан - шаблон попробует определить админа по ролям (role.id == 0).
-                #}
                 {% set _is_admin = current_user.is_authenticated and (current_user.roles|selectattr("id","equalto",0)|list) %}
                 {% set _can_edit = (can_edit if can_edit is defined else (_is_admin|length > 0)) %}
 

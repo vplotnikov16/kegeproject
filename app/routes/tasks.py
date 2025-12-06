@@ -80,7 +80,8 @@ def new_task():
         number=number,
         statement_html=statement_html,
         answer=answer,
-        source='kegeproject'
+        source='kegeproject',
+        author_id=current_user.id,
     )
     db.session.add(task)
     db.session.commit()

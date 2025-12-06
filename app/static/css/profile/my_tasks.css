@@ -1,0 +1,44 @@
+/* Общая обёртка списка — отдельный скроллируемый контейнер */
+.results-panel {
+  border: 0;
+  background: transparent;
+}
+
+.results-container {
+  max-height: calc(100vh - 260px); /* подстраивай под header/панели */
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Карточка задачи */
+.task-card { border-radius: 8px; overflow: hidden; }
+.task-card .card-body { padding: 1rem; display:flex; gap:1rem; align-items:flex-start; }
+
+.task-title { font-size: 1rem; margin:0; }
+.task-source { font-size: .85rem; color: #6c757d; }
+
+/* Сниппет условия: сокращённый блок (на бэке формируем плоский HTML или текст) */
+.task-statement-snippet {
+  max-height: 12.5em; /* примерно 6 строк при line-height ~2 */
+  overflow: hidden;
+  position: relative;
+  line-height: 1.9;
+}
+
+/* Развёрнутое состояние (встраиваем через класс) */
+.task-statement-snippet.expanded {
+  max-height: none;
+}
+
+/* Avatar */
+.avatar { width: 72px; height: 72px; object-fit: cover; }
+
+/* Мелкие кнопки и отступы */
+.task-card .btn { font-size: .85rem; }
+.btn-expand-snippet { font-size: .85rem; color: #0d6efd; }
+
+/* Стили для небольших экранов */
+@media (max-width: 768px) {
+  .task-card .card-body { flex-direction: column; }
+  .task-meta { width: auto; text-align: left; }
+}

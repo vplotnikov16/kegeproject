@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from io import BytesIO
+
+from flask import Blueprint, render_template, request, redirect, url_for, abort, send_file
 from flask_login import login_user, login_required, logout_user, current_user
 
 from app.forms.auth import RegisterForm, LoginForm
-from app.models import User
+from app.models import User, UserAvatar
 from app.extensions import db
 
 pages_bp = Blueprint("pages", __name__)
@@ -61,3 +63,15 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('pages.index'))
+
+
+@pages_bp.get("/avatar/<int:user_id>")
+def get_avatar(user_id):
+    avatar = UserAvatar.query.get(user_id)
+    if not avatar:
+        abort(404)
+    return send_file(
+        BytesIO(avatar.data),
+        mimetype=avatar.mime_type,
+        download_name=f"avatar_{user_id}.png"
+    )
