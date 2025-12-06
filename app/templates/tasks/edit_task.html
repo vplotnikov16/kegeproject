@@ -1,0 +1,91 @@
+{% extends "tasks/tasks_base.html" %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='js/TinyMCE/tinymce.min.js') }}" referrerpolicy="origin" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block title %}Редактировать задачу #{{ task.id }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1>Редактировать задачу #{{ task.id }}</h1>
+
+    <form action="" method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.number(class="form-control", type="number", placeholder="Номер задачи в КИМ") }}
+            {% for e in form.number.errors %}
+            <div class="text-danger">{{ e }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.statement_html(class="form-control", id="statement_html", placeholder="Текст задачи") }}
+            {% for e in form.statement_html.errors %}
+            <div class="text-danger">{{ e }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.answer(class="form-control", placeholder="Ответ на задачу") }}
+            {% for e in form.answer.errors %}
+            <div class="text-danger">{{ e }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Добавить файлы (необязательно)</label>
+            {{ form.attachments(class="form-control", multiple=True) }}
+            {% for e in form.attachments.errors %}
+            <div class="text-danger">{{ e }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+
+    <hr>
+
+    <h5>Существующие вложения</h5>
+    {% if task.attachments %}
+    <ul class="list-group mb-4">
+        {% for a in task.attachments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                {{ a.filename }}
+                {% if a.size %} <small class="text-muted">({{ (a.size // 1024) }} KB)</small>{% endif %}
+            </div>
+            <div>
+                <a href="{{ url_for('attachments.download_attachment', attachment_id=a.id) }}" class="btn btn-sm btn-outline-primary">Скачать</a>
+
+                <form action="{{ url_for('attachments.delete_attachment', attachment_id=a.id) }}" method="post" class="d-inline-block ms-2">
+                    {{ delete_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Удалить вложение?');">Удалить</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="text-muted">Вложений пока нет.</div>
+    {% endif %}
+
+</div>
+
+<script>
+    tinymce.init({
+      selector: '#statement_html',
+      menubar: false,
+      plugins: 'lists link image table code',
+      language_url: '{{ url_for('static', filename='js/TinyMCE/langs/ru.js') }}',
+      language: 'ru',
+      license_key: 'gpl',
+      toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | table | bullist numlist | link image | code',
+      height: 300
+    });
+</script>
+{% endblock %}

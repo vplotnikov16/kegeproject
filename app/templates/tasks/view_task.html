@@ -1,0 +1,145 @@
+{% extends "tasks/tasks_base.html" %}
+
+{% block title %}Задача #{{ task.id }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h2 class="mb-0">Задача <small class="text-muted">#{{ task.id }}</small></h2>
+                    <div class="text-muted">КИМ №{{ task.number }}</div>
+                </div>
+
+                {# Кнопки редактирования / удаления.
+                Лучше вычислить can_edit в view (например: current_user.id == task.owner_id or user_is_admin).
+                Если can_edit не передан - шаблон попробует определить админа по ролям (role.id == 0).
+                #}
+                {% set _is_admin = current_user.is_authenticated and (current_user.roles|selectattr("id","equalto",0)|list) %}
+                {% set _can_edit = (can_edit if can_edit is defined else (_is_admin|length > 0)) %}
+
+                {% if current_user.is_authenticated and _can_edit %}
+                <div class="btn-group">
+                    <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+
+                    {# Удаление: если в контексте передали delete_form (WTForm с CSRF) — используем его, иначе даём простой POST через JS + confirm #}
+                    {% if delete_form is defined %}
+                    <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="post" class="d-inline-block ms-1">
+                        {{ delete_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить задачу? Это действие необратимо.');">Удалить</button>
+                    </form>
+                    {% else %}
+                    <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="post" class="d-inline-block ms-1">
+                        {# Если у вас глобальный CSRF через flask-wtf, можно вставить {{ csrf_token() }} сюда из view #}
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить задачу? Это действие необратимо.');">Удалить</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <section class="mb-4">
+                <h5>Условие</h5>
+                <div class="card">
+                    <div class="card-body">
+                        {# task.statement_html — уже подготовленный html. Отображаем безопасно: |safe.
+                        ВНИМАНИЕ: убедитесь, что вы доверяете содержимому или очищаете его от вредоносного JS на стороне сервера. #}
+                        <div class="task-statement">
+                            {{ task.statement_html | safe }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-4">
+                <h5>Ответ (спойлер)</h5>
+                <p>
+                    <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#answerCollapse" role="button" aria-expanded="false" aria-controls="answerCollapse">
+                        Показать / Скрыть ответ
+                    </a>
+                </p>
+                <div class="collapse" id="answerCollapse">
+                    <div class="card card-body">
+                        <strong>Ответ:</strong>
+                        <div class="mt-2">{{ task.answer }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-4">
+                <h5>Вложения</h5>
+                {% if task.attachments %}
+                <ul class="list-group">
+                    {% for a in task.attachments %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-paperclip"></i>
+                            {{ a.filename if a.filename is defined else (a.path if a.path is defined else ('attachment-' ~ a.id)) }}
+                        </div>
+                        <div class="text-muted small">
+                            {% if a.size is defined %}{{ (a.size // 1024) }} KB{% endif %}
+                            &nbsp;
+                            <a href="{{ url_for('attachments.download_attachment', attachment_id=a.id) }}" class="btn btn-sm btn-outline-primary ms-2">Скачать</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted">Вложений нет</div>
+                {% endif %}
+            </section>
+        </div>
+
+        <!-- Правая колонка: мета-информация -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    Информация
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-6">Опубликовано</dt>
+                        <dd class="col-6">
+                            {% if task.published_at %}
+                            {{ task.published_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-6">Источник</dt>
+                        <dd class="col-6">{{ task.source or '—' }}</dd>
+
+                        <dt class="col-6">Вложений</dt>
+                        <dd class="col-6">{{ task.attachments | length }}</dd>
+
+                        <dt class="col-6">Вариантов</dt>
+                        <dd class="col-6">{{ task.variant_links | length }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            {# Место для дополнительной информации: пользователь-автор, теги, метки, права и т.п. #}
+            <div class="card">
+                <div class="card-header">Дополнительно</div>
+                <div class="card-body">
+                    {# Пример: автор (если в модели появится связь author или creator) #}
+                    {% if task.author is defined %}
+                    <div><strong>Автор:</strong> <a href="{{ url_for('users.view', user_id=task.author.id) }}">{{ task.author.username }}</a></div>
+                    {% endif %}
+
+                    {# Пример: кнопка просмотра всех заданий с тем же источником #}
+                    {% if task.source %}
+                    <div class="mt-2">
+                        {# <a href="{{ url_for('tasks.list_by_source', source=task.source) }}" class="btn btn-outline-secondary btn-sm">Показать задачи из источника</a> #}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

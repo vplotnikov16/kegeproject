@@ -54,6 +54,11 @@ def db(app):
     except SQLAlchemyError:
         _db.session.rollback()
 
+    # --- здесь добавляем сидирование ролей ---
+    from app.models.roles import ensure_default_roles
+    # вызываем в контексте приложения; app фикстура уже yielded app в app_context
+    ensure_default_roles(app)
+
     yield _db
 
     _db.session.remove()

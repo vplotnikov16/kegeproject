@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import platform
@@ -173,11 +174,12 @@ def log_command(func):
 
 
 @log_command
-def run_cmd_capture(args: List[str], cwd: Optional[Path] = None, default_level: int = logging.DEBUG) -> subprocess.CompletedProcess:
+def run_cmd_capture(args: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None,
+                    default_level: int = logging.DEBUG) -> subprocess.CompletedProcess:
     """
     Запускает команду, возвращает CompletedProcess. default_level указывает исходный уровень для строк без префикса.
     """
-    return _stream_subprocess(args, cwd=cwd, default_level=default_level)
+    return _stream_subprocess(args, cwd=cwd, env=env, default_level=default_level)
 
 
 def get_pip_version(python_executable: Path) -> Optional[str]:
@@ -289,6 +291,25 @@ def main() -> None:
         venv_python = get_python_in_venv(venv_path)
     if not venv_python.exists():
         raise SystemExit(3)
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--migrate", action="store_true", help="Run 'flask db upgrade' in project venv before running app")
+    parser.add_argument("--seed", action="store_true", help="Run 'flask seed' in project venv before running app (idempotent)")
+    args, _ = parser.parse_known_args()
+
+    # окружение для flask-команд
+    env = os.environ.copy()
+    env.setdefault("FLASK_APP", "run.py")
+
+    # Выполняем опциональные команды через venv_python
+    if args.migrate:
+        info("Running 'flask db upgrade' ...")
+        run_cmd_capture([str(venv_python), "-m", "flask", "db", "upgrade"], cwd=project_root, env=env, default_level=logging.INFO)
+
+    if args.seed:
+        info("Running 'flask seed' ...")
+        run_cmd_capture([str(venv_python), "-m", "flask", "seed"], cwd=project_root, env=env, default_level=logging.INFO)
+
     rc = run_in_venv(venv_python, project_root)
     if rc != 0:
         raise SystemExit(rc)
