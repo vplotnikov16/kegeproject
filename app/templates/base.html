@@ -31,7 +31,13 @@
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 profile-menu">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="{{ url_for('profile.profile') }}" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="profile-pic"><img src="{{ url_for('static', filename='img/ava.png') }}" alt="Аватарка"></div>
+                            <div class="profile-pic">
+                                {% if current_user.avatar %}
+                                    <img src="{{ url_for('avatar.get_avatar', user_id=current_user.id) }}" alt="Аватарка">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Аватарка">
+                                {% endif %}
+                            </div>
                             <span class="user-login ms-2">{{ current_user.username }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
