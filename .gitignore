@@ -213,3 +213,4 @@ app.db
 !/migrations
 /.vs/
 /kegeproject.pyproj
+/kegeproject.sln
