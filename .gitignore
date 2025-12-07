@@ -211,3 +211,5 @@ app.db
 *.sqlite3
 
 !/migrations
+/.vs/
+/kegeproject.pyproj
