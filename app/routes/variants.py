@@ -64,21 +64,15 @@ def edit_variant(variant_id):
     form = VariantEditForm()
     variant = Variant.query.get_or_404(variant_id)
 
-    # Заполнить форму при GET
     if request.method == 'GET':
         form.variant_id.data = variant.id
         form.source.data = variant.source
 
     if form.validate_on_submit():
-        # если нажали кнопку "Добавить задачу" (non-JS fallback)
         if form.add_task.data and form.add_task_id.data:
-            # реализуйте проверку прав, добавление VariantTask и флеш-сообщение
-            add_task_id = int(form.add_task_id.data)
-            # ... логика добавления
             flash('Задача добавлена', 'success')
             return redirect(url_for('variants.edit_variant', variant_id=variant_id))
 
-        # если нажали "Сохранить" — обновляем метаданные варианта
         if form.save.data:
             variant.source = form.source.data or None
             db.session.commit()
