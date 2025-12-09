@@ -25,6 +25,9 @@ def _register_blueprints(flask_app):
     from app.routes.users import users_bp
     flask_app.register_blueprint(users_bp, url_prefix='/users')
 
+    from app.routes.variants import variants_bp
+    flask_app.register_blueprint(variants_bp, url_prefix='/variants')
+
 
 def create_app(config_class=Config):
     flask_app = Flask(__name__)
