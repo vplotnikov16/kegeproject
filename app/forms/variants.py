@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, SubmitField
+from wtforms import BooleanField, SubmitField, HiddenField, StringField, IntegerField
 from markupsafe import Markup
 
 
@@ -52,3 +52,11 @@ class VariantGenerationForm(FlaskForm):
     kim_27 = KimBooleanInputField("Анализ данных")
 
     submit = SubmitField('Сгенерировать случайный вариант')
+
+
+class VariantEditForm(FlaskForm):
+    variant_id = HiddenField()
+    source = StringField('Источник')
+    add_task_id = IntegerField('ID задачи')
+    save = SubmitField('Сохранить')
+    add_task = SubmitField('Добавить задачу')

@@ -5,21 +5,84 @@
 {% block content %}
 <div class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Вариант #{{ variant.id }}</h3>
-        <a href="{{ url_for('variants.variants') }}" class="btn btn-outline-secondary">Назад</a>
+        <div>
+            <h3 class="mb-0">Вариант #{{ variant.id }}</h3>
+            <div class="text-muted small">
+                {% if variant.source %}Источник: {{ variant.source }} · {% endif %}
+                {% if variant.created_at %}Создан: {{ variant.created_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+                {% if variant.author %}
+                · Автор: {{ variant.author.first_name }} {{ variant.author.last_name }}
+                {% endif %}
+            </div>
+        </div>
+
+        {# вычислим can_edit #}
+        {% set can_edit = false %}
+        {% if current_user.is_authenticated %}
+        {% if current_user.is_admin %}
+        {% set can_edit = true %}
+        {% elif variant.author and current_user.id == variant.author.id %}
+        {% set can_edit = true %}
+        {% endif %}
+        {% endif %}
+
+        <div class="d-flex gap-2">
+            {% if can_edit %}
+            <a href="{{ url_for('variants.edit_variant', variant_id=variant.id) }}" class="btn btn-primary">Редактировать</a>
+            {% endif %}
+            <a href="{{ url_for('variants.variants') }}" class="btn btn-outline-secondary">К странице вариантов</a>
+        </div>
     </div>
 
     <div class="list-group">
-        {% for t in tasks %}
+        {% for vt in variant.tasks %}
         <div class="list-group-item">
             <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="fw-bold">№{{ t.number }} — Задача #{{ t.id }}</div>
-                    <div class="task-statement mt-2">{{ t.statement_html | safe }}</div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">№{{ vt.task.number }} — Задача #{{ vt.task.id }}</div>
+                    <div class="task-statement mt-2">{{ vt.task.statement_html | safe }}</div>
+
+                    {# вложения #}
+                    {% if vt.task.attachments %}
+                    <div class="task-attachments mt-3">
+                        <div class="small text-muted mb-1">Вложения:</div>
+                        <ul class="list-unstyled mb-0">
+                            {% for a in vt.task.attachments %}
+                            <li class="mb-1 d-flex align-items-center gap-2">
+                                <a href="{{ url_for('attachments.download_attachment', attachment_id=a.id) }}" class="link-primary">{{ a.filename }}</a>
+                                {% if a.size %}
+                                <small class="text-muted">({{ (a.size // 1024) }} KB)</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
-                <div class="text-end">
+
+                <div class="text-end ms-3 d-flex flex-column align-items-end gap-2">
+                    <a href="{{ url_for('tasks.view_task', task_id=vt.task.id) }}"
+                       class="btn btn-sm btn-outline-primary">
+                        К задаче
+                    </a>
+
+                    <button
+                            class="btn btn-sm btn-outline-secondary answer-toggle"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#answer-{{ vt.task.id }}"
+                            aria-expanded="false"
+                            aria-controls="answer-{{ vt.task.id }}">
+                        <span class="chev-icon">▾</span> Ответ
+                    </button>
+
+                </div>
+            </div>
+
+            <div class="collapse mt-3" id="answer-{{ vt.task.id }}">
+                <div class="card card-body">
                     <div class="small text-muted">Ответ:</div>
-                    <div class="fw-bold">{{ t.answer }}</div>
+                    <div class="fw-bold">{{ vt.task.answer }}</div>
                 </div>
             </div>
         </div>
@@ -28,4 +91,6 @@
         {% endfor %}
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/variants/view_variant.js') }}"></script>
 {% endblock %}
