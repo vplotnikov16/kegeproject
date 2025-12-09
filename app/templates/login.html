@@ -1,34 +1,36 @@
 {% extends "base.html" %}
 
 {% block head %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/auth.css') }}"/>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/auth.css') }}"/>
 {% endblock %}
 
 {% block title %}Вход в систему{% endblock %}
 
 {% block content %}
-<h1>Авторизация</h1>
-<form class="auth-form" action="" method="post">
-    <p>{{ form.username(class="form-control", type="username", placeholder="Имя пользователя") }}</p>
-    {% for error in form.username.errors %}
+<div class="auth-wrapper">
+    <h1>Авторизация</h1>
+    <form class="auth-form" action="" method="post">
+        <p>{{ form.username(class="form-control", type="username", placeholder="Имя пользователя") }}</p>
+        {% for error in form.username.errors %}
         <div class="alert alert-danger" role="alert">{{ error }}</div>
-    {% endfor %}
+        {% endfor %}
 
-    <p>{{ form.password(class="form-control", type="password", placeholder="Пароль") }}</p>
-    {% for error in form.password.errors %}
+        <p>{{ form.password(class="form-control", type="password", placeholder="Пароль") }}</p>
+        {% for error in form.password.errors %}
         <div class="alert alert-danger" role="alert">{{ error }}</div>
-    {% endfor %}
+        {% endfor %}
 
-    <div class="checkbox">
-        <label>{{ form.remember_me() }} {{ form.remember_me.label }}</label>
-    </div>
+        <div class="checkbox">
+            <label>{{ form.remember_me() }} {{ form.remember_me.label }}</label>
+        </div>
 
-    {% if error %}
+        {% if error %}
         <div class="alert alert-danger" role="alert">{{ error }}</div>
-    {% endif %}
+        {% endif %}
 
-    <div class="btn-submit">
-        {{ form.submit(class="btn btn-primary", type="submit") }}
-    </div>
-</form>
+        <div class="btn-submit">
+            {{ form.submit(class="btn btn-primary", type="submit") }}
+        </div>
+    </form>
+</div>
 {% endblock %}

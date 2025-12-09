@@ -1,0 +1,34 @@
+.variants-page {
+  min-height: 60vh;
+}
+
+.kim-list {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.kim-item {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  padding-bottom: 8px;
+}
+
+#variants-list .list-group-item {
+  cursor: pointer;
+}
+
+#variant-preview .card-body {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.task-card {
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 10px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.kim-controls .input-group-text {
+  font-size: 0.85rem;
+}

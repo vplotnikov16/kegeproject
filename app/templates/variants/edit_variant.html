@@ -1,0 +1,111 @@
+{% extends "variants/variants_base.html" %}
+
+{% block title %}Редактировать вариант #{{ variant.id }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/variants/edit_variant.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4 edit-variant-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">Редактировать вариант #{{ variant.id }}</h3>
+            <div class="text-muted small">
+                {% if variant.source %}Источник: {{ variant.source }} · {% endif %}
+                {% if variant.created_at %}Создан: {{ variant.created_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+                {% if variant.author %} · Автор: {{ variant.author.first_name }} {{ variant.author.last_name }}{% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('variants.variants') }}" class="btn btn-outline-secondary">К странице вариантов</a>
+            <a href="{{ url_for('variants.view_variant', variant_id=variant.id) }}" class="btn btn-primary">Просмотреть</a>
+        </div>
+    </div>
+
+    {# CSRF token из Flask-WTF формы (передайте form в шаблон) #}
+    <form id="edit-variant-form" method="post" style="display: none;">
+        {{ form.hidden_tag() }}
+    </form>
+    <meta name="csrf-token" content="{{ form.csrf_token._value() if form and form.csrf_token else '' }}">
+
+    <div class="row g-4">
+        <!-- LEFT: редактирование варианта (2/3) -->
+        <section class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Текущие задачи варианта</h6>
+                    <div id="variant-tasks-list" class="list-group">
+                        {% for vt in variant.tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start variant-task-item" data-task-id="{{ vt.task.id }}">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">№{{ vt.task.number }} — Задача #{{ vt.task.id }}</div>
+                                <div class="small text-muted mb-1">Источник: {{ vt.task.source or '-' }}</div>
+                                <div class="task-statement-preview small text-truncate" style="max-height: 6em; overflow:hidden;">
+                                    {{ vt.task.statement_html | safe }}
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column align-items-end gap-2">
+                                <a href="{{ url_for('tasks.view_task', task_id=vt.task.id) }}" class="btn btn-sm btn-outline-primary">К задаче</a>
+                                <button class="btn btn-sm btn-danger remove-task-btn" data-task="{{ vt.task.id }}">Удалить</button>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-muted">Вариант пока пуст.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Добавить задачу по id</h6>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <input id="add-task-id" class="form-control" type="number" min="1" placeholder="id задачи">
+                        </div>
+                        <div class="col-auto">
+                            <button id="add-task-btn" class="btn btn-success">Добавить</button>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <small class="text-muted">Введите id задачи и нажмите «Добавить». Если задача найдена и её ещё нет в варианте, то она добавится.</small>
+                            <div id="add-task-feedback" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: мои задачи (1/3) -->
+        <aside class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Мои задачи</h6>
+                    <div id="my-tasks-list" class="list-group">
+                        {% if my_tasks %}
+                        {% for t in my_tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start my-task-item" data-task-id="{{ t.id }}">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">№{{ t.number }} — Задача #{{ t.id }}</div>
+                                <div class="small text-truncate" style="max-height:4em; overflow:hidden;">{{ t.statement_html | safe }}</div>
+                            </div>
+                            <div class="d-flex flex-column gap-2 align-items-end">
+                                <a href="{{ url_for('tasks.view_task', task_id=t.id) }}" class="btn btn-sm btn-outline-primary">К задаче</a>
+                                <button class="btn btn-sm btn-success add-task-from-list-btn" data-task="{{ t.id }}">Добавить</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-muted small">У вас пока нет задач.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/variants/edit_variant.js') }}"></script>
+{% endblock %}

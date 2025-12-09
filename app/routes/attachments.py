@@ -38,7 +38,7 @@ def delete_attachment(attachment_id):
     attachment = TaskAttachment.query.get_or_404(attachment_id)
     task = attachment.task
 
-    can_delete = current_user.is_admin or current_user.id == task.author.id
+    can_delete = (current_user is not None) and (current_user.is_admin or task.author is not None and current_user.id == task.author.id)
     if not can_delete:
         abort(403)
 

@@ -1,0 +1,21 @@
+.edit-variant-page .variant-task-item {
+  gap: 1rem;
+}
+
+.edit-variant-page .my-task-item {
+  gap: 0.75rem;
+}
+
+.task-statement-preview {
+  color: #444;
+}
+
+.edit-variant-page .list-group-item .btn {
+  min-width: 80px;
+}
+
+@media (max-width: 991px) {
+  .edit-variant-page aside {
+    order: 2;
+  }
+}
