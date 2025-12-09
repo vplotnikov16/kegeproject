@@ -4,8 +4,8 @@ from markupsafe import Markup
 
 
 class KimBooleanInputField(BooleanField):
-    def __init__(self, *args, label=None, min_val=1, max_val=20, **kwargs):
-        super().__init__(label, *args, **kwargs)
+    def __init__(self, label=None, min_val=1, max_val=20, **kwargs):
+        super().__init__(label, **kwargs)
         self.min_val = min_val
         self.max_val = max_val
 

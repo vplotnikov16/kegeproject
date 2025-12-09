@@ -49,7 +49,6 @@
 
                             <div class="d-flex flex-column align-items-end gap-2">
                                 <a href="{{ url_for('tasks.view_task', task_id=vt.task.id) }}" class="btn btn-sm btn-outline-primary">К задаче</a>
-                                <button class="btn btn-sm btn-outline-secondary preview-task-btn" data-task="{{ vt.task.id }}">Просмотр</button>
                                 <button class="btn btn-sm btn-danger remove-task-btn" data-task="{{ vt.task.id }}">Удалить</button>
                             </div>
                         </div>
@@ -93,7 +92,7 @@
                                 <div class="small text-truncate" style="max-height:4em; overflow:hidden;">{{ t.statement_html | safe }}</div>
                             </div>
                             <div class="d-flex flex-column gap-2 align-items-end">
-                                <button class="btn btn-sm btn-outline-secondary preview-task-btn" data-task="{{ t.id }}">Просмотр</button>
+                                <a href="{{ url_for('tasks.view_task', task_id=t.id) }}" class="btn btn-sm btn-outline-primary">К задаче</a>
                                 <button class="btn btn-sm btn-success add-task-from-list-btn" data-task="{{ t.id }}">Добавить</button>
                             </div>
                         </div>
