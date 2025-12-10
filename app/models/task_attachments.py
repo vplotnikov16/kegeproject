@@ -1,3 +1,7 @@
+from typing import Dict
+
+from flask import url_for
+
 from app.extensions import db
 from app.utils.date_utils import utcnow
 
@@ -27,3 +31,15 @@ class TaskAttachment(db.Model):
         back_populates='attachments',
         passive_deletes=True,
     )
+
+    @property
+    def as_json(self) -> Dict:
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'content_type': self.content_type,
+            'size': self.size,
+            'uploaded_at': self.uploaded_at,
+            'download_url': url_for('attachments.download_attachment', attachment_id=self.id),
+        }
+

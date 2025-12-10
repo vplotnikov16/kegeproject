@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-      el.textContent = `#${v.id} — ${v.task_count} задач`;
+      el.textContent = `Вариант #${v.id} — ${v.task_count} задач`;
       const meta = document.createElement('small');
       meta.className = 'text-muted';
       meta.textContent = v.source ? ` ${v.source}` : '';

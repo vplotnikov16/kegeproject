@@ -92,4 +92,5 @@ class Task(db.Model):
             "view_url": url_for('tasks.view_task', task_id=self.id),
             "edit_url": url_for('tasks.edit_task', task_id=self.id),
             "delete_url": url_for('tasks.delete_task', task_id=self.id),
+            'attachments': [a.as_json for a in self.attachments],
         }

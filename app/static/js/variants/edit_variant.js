@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="task-statement-preview small text-truncate" style="max-height:6em; overflow:hidden;">${task.statement_html || ''}</div>
       </div>
       <div class="d-flex flex-column align-items-end gap-2">
-        <a href="/tasks/${task.id}" class="btn btn-sm btn-outline-primary">К задаче</a>
+        <a href="/tasks/view_task/${task.id}" class="btn btn-sm btn-outline-primary">К задаче</a>
         <button class="btn btn-sm btn-outline-secondary preview-task-btn" data-task="${task.id}">Просмотр</button>
         <div class="d-flex gap-1">
           <button class="btn btn-sm btn-light move-up-btn" data-task="${task.id}" title="Вверх">▲</button>
