@@ -113,23 +113,7 @@ def add_task(variant_id):
         db.session.rollback()
         return jsonify(ok=False, message="Ошибка добавления"), 500
 
-    attachments = []
-    for a in task.attachments:
-        attachments.append({
-            'id': a.id,
-            'filename': a.filename,
-            'size': a.size,
-            'download_url': url_for('attachments.download_attachment', attachment_id=a.id)
-        })
-    task_payload = {
-        'id': task.id,
-        'number': task.number,
-        'statement_html': task.statement_html,
-        'answer': task.answer,
-        'source': task.source,
-        'attachments': attachments
-    }
-    return jsonify(ok=True, task=task_payload), 200
+    return jsonify(ok=True, task=task.as_json), 200
 
 
 @variants_bp.route('/<int:variant_id>/remove_task', methods=['POST'])
@@ -209,23 +193,7 @@ def move_task(variant_id):
 @login_required
 def task_json(task_id):
     task = Task.query.get_or_404(task_id)
-    attachments = []
-    for a in task.attachments:
-        attachments.append({
-            'id': a.id,
-            'filename': a.filename,
-            'size': a.size,
-            'download_url': url_for('attachments.download_attachment', attachment_id=a.id)
-        })
-    payload = {
-        'id': task.id,
-        'number': task.number,
-        'statement_html': task.statement_html,
-        'answer': task.answer,
-        'source': task.source,
-        'attachments': attachments
-    }
-    return jsonify(ok=True, task=payload), 200
+    return jsonify(ok=True, task=task.as_json), 200
 
 
 def _strip_tags(text: str) -> str:
@@ -290,21 +258,4 @@ def variants_task_json(task_id):
     if not t:
         return jsonify(ok=False, message='Задача не найдена'), 404
 
-    attachments = []
-    for a in t.attachments:
-        attachments.append({
-            'id': a.id,
-            'filename': a.filename,
-            'size': a.size,
-            'download_url': url_for('attachments.download_attachment', attachment_id=a.id)
-        })
-
-    payload = {
-        'id': t.id,
-        'number': t.number,
-        'statement_html': t.statement_html,
-        'answer': t.answer,
-        'source': t.source,
-        'attachments': attachments,
-    }
-    return jsonify(ok=True, task=payload), 200
+    return jsonify(ok=True, task=t.as_json), 200
