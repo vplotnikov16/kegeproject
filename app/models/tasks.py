@@ -75,7 +75,7 @@ class Task(db.Model):
             "variant_links_count": len(self.variant_links),
             "variant_links_ids": [vl.variant_id for vl in self.variant_links],
         }
-
+        can_edit = (current_user is not None) and (current_user.is_admin or self.author is not None and current_user.id == self.author.id),
         return {
             "id": self.id,
             "number": self.number,
@@ -88,7 +88,7 @@ class Task(db.Model):
             "author_username": self.author.username,
             "author_avatar_url": url_for('profile.get_avatar', user_id=self.author.id),
             "variant_links": variant_links_data,
-            "can_edit": (current_user is not None) and (current_user.is_admin or self.author is not None and current_user.id == self.author.id),
+            "can_edit": can_edit,
             "view_url": url_for('tasks.view_task', task_id=self.id),
             "edit_url": url_for('tasks.edit_task', task_id=self.id),
             "delete_url": url_for('tasks.delete_task', task_id=self.id),
