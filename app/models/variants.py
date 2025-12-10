@@ -18,6 +18,14 @@ class Variant(db.Model):
         default=utcnow,
     )
 
+    author_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,  # сначала делаем nullable, чтобы миграция не ломала старые строки
+        index=True,
+    )
+    author = db.relationship('User', back_populates='variants', lazy='joined')
+
     # при удалении варианта удаляются записи в variant_tasks, но не в Attempts
     tasks = db.relationship(
         'VariantTask',

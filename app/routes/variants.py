@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
@@ -36,7 +37,7 @@ def variants():
         print('Пустой вариант')
         return render_template('variants/variants.html', form=form)
 
-    variant = Variant()
+    variant = Variant(author_id=current_user.id)
     db.session.add(variant)
     db.session.commit()
 
@@ -223,5 +224,87 @@ def task_json(task_id):
         'answer': task.answer,
         'source': task.source,
         'attachments': attachments
+    }
+    return jsonify(ok=True, task=payload), 200
+
+
+def _strip_tags(text: str) -> str:
+    if not text:
+        return ''
+    return re.sub(r'</?[^>]+>', '', text)
+
+
+@variants_bp.route('/search')
+def search_variants():
+    if request.args.get('all'):
+        variants = Variant.query.order_by(Variant.id.desc()).all()
+        out = []
+        for v in variants:
+            task_count = VariantTask.query.filter_by(variant_id=v.id).count()
+            out.append({
+                'id': v.id,
+                'source': v.source,
+                'task_count': task_count,
+            })
+        return jsonify(ok=True, variants=out), 200
+
+    vid = request.args.get('id')
+    if vid:
+        try:
+            vid_i = int(vid)
+        except (ValueError, TypeError):
+            return jsonify(ok=False, message='Некорректный id'), 400
+
+        v = Variant.query.get(vid_i)
+        if not v:
+            return jsonify(ok=False, message='Вариант не найден'), 404
+
+        tasks_out = []
+        for vt in v.tasks:
+            t = getattr(vt, 'task', None)
+            if not t:
+                continue
+            preview = _strip_tags(t.statement_html)
+            if len(preview) > 1200:
+                preview = preview[:1200]
+            tasks_out.append({
+                'id': t.id,
+                'number': t.number,
+                'preview': preview,
+            })
+
+        variant_payload = {
+            'id': v.id,
+            'source': v.source,
+            'created_at': v.created_at.isoformat() if getattr(v, 'created_at', None) else None,
+            'tasks': tasks_out,
+        }
+        return jsonify(ok=True, variant=variant_payload), 200
+
+    return jsonify(ok=False, message='Неверные параметры запроса'), 400
+
+
+@variants_bp.route('/task/<int:task_id>')
+def variants_task_json(task_id):
+    t = Task.query.get(task_id)
+    if not t:
+        return jsonify(ok=False, message='Задача не найдена'), 404
+
+    attachments = []
+    for a in t.attachments:
+        attachments.append({
+            'id': a.id,
+            'filename': a.filename,
+            'size': a.size,
+            'download_url': url_for('attachments.download_attachment', attachment_id=a.id)
+        })
+
+    payload = {
+        'id': t.id,
+        'number': t.number,
+        'statement_html': t.statement_html,
+        'answer': t.answer,
+        'source': t.source,
+        'attachments': attachments,
     }
     return jsonify(ok=True, task=payload), 200
