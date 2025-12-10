@@ -20,42 +20,15 @@ def api_by_numbers():
         return jsonify({"error": "invalid numbers"}), 400
 
     tasks = Task.query.filter(Task.number.in_(nums)).order_by(Task.number, Task.id).all()
-
-    def to_short(t):
-        snippet = (t.statement_html[:300] + '...') if t.statement_html and len(t.statement_html) > 300 else (t.statement_html or '')
-        return {
-            "id": t.id,
-            "number": t.number,
-            "statement_html_snippet": snippet,
-            "published_at": t.published_at.strftime('%Y-%m-%d') if t.published_at else None,
-            "view_url": url_for('tasks.view_task', task_id=t.id)
-        }
-
-    return jsonify({"tasks": [to_short(t) for t in tasks]})
+    return jsonify({"tasks": [t.as_json for t in tasks]})
 
 
 @tasks_bp.route('/api/by_ids', methods=['POST'])
 def api_by_ids():
-    payload = request.get_json(silent=True) or {}
-    ids = payload.get('ids') or []
-    try:
-        ids_clean = [int(i) for i in ids]
-    except Exception:
-        return jsonify({"error": "invalid ids"}), 400
-
-    tasks = Task.query.filter(Task.id.in_(ids_clean)).all()
-
-    def to_short(t):
-        snippet = (t.statement_html[:300] + '...') if t.statement_html and len(t.statement_html) > 300 else (t.statement_html or '')
-        return {
-            "id": t.id,
-            "number": t.number,
-            "statement_html_snippet": snippet,
-            "published_at": t.published_at.strftime('%Y-%m-%d') if t.published_at else None,
-            "view_url": url_for('tasks.view_task', task_id=t.id)
-        }
-
-    return jsonify({"tasks": [to_short(t) for t in tasks]})
+    data = request.get_json() or {}
+    ids = data.get('ids') or []
+    tasks = Task.query.filter(Task.id.in_(ids)).all()
+    return jsonify(ok=True, tasks=[t.as_json for t in tasks])
 
 
 @tasks_bp.route('/')

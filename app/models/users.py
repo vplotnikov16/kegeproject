@@ -2,6 +2,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.extensions import db
+from app.utils.date_utils import utcnow
 from app.utils.name_utils import get_username
 
 
@@ -33,6 +34,11 @@ class User(UserMixin, db.Model):
         db.String(256),
         nullable=False,
     )
+    registered_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=utcnow,
+    )
 
     # при удалении пользователя строки в user_roles удалятся (работает через FK ondelete)
     roles = db.relationship(
@@ -53,6 +59,11 @@ class User(UserMixin, db.Model):
         uselist=False,
         cascade='all, delete-orphan',
         passive_deletes=True,
+    )
+    variants = db.relationship(
+        'Variant',
+        back_populates='author',
+        passive_deletes=True
     )
 
     def set_password(self, password: str):

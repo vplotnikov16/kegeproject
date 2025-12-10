@@ -27,10 +27,20 @@ function renderTasksList(container, tasks) {
     const answerId = `answerCollapse-${t.id}`;
     const item = el('div', { class: 'list-group-item' });
 
-    // Заголовок
     const leftTitle = el('div', { class: 'fw-bold' }, `#${t.id} — КИМ №${t.number}`);
     const rightMeta = el('div', { class: 'text-muted small' }, t.published_at || '');
     const header = el('div', { class: 'd-flex justify-content-between' }, leftTitle, rightMeta);
+
+    let authorEl = null;
+    if (t.author && (t.author.first_name || t.author.last_name)) {
+      const authorName = `${t.author.first_name || ''} ${t.author.last_name || ''}`.trim();
+      const authorUrl = t.author.id ? `/users/view/${t.author.id}` : '#';
+      const authorLink = el('a', { href: authorUrl }, authorName || '—');
+      authorEl = el('div', { class: 'small text-muted mt-1' },
+        el('strong', {}, 'Автор: '),
+        authorLink
+      );
+    }
 
     let sourceEl = null;
     if (t.source) {
@@ -69,6 +79,7 @@ function renderTasksList(container, tasks) {
     );
 
     item.appendChild(header);
+    if (authorEl) item.appendChild(authorEl);
     if (sourceEl) item.appendChild(sourceEl);
     item.appendChild(statement);
     item.appendChild(toggleFullBtn);

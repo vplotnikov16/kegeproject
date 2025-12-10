@@ -169,17 +169,15 @@ document.addEventListener('DOMContentLoaded', function () {
       card.className = 'task-card';
       card.innerHTML = `<div class="d-flex justify-content-between align-items-start">
           <div><strong>№${t.number}</strong> <small class="text-muted"> (id:${t.id})</small></div>
-          <div><button class="btn btn-sm btn-outline-secondary preview-task-btn" data-task="${t.id}">Просмотр</button></div>
+          <div><a class="btn btn-sm btn-outline-primary" href="/tasks/view_task/${t.id}">К задаче</a></div>
         </div>
         <div class="mt-2"><div class="small text-muted">${sanitizePreview(t.preview)}</div></div>`;
       col.appendChild(card);
       variantTasks.appendChild(col);
-      const btn = card.querySelector('.preview-task-btn');
-      if (btn) btn.addEventListener('click', () => openTaskQuickView(t.id));
     });
     if (openVariantBtn) {
       openVariantBtn.onclick = function () {
-        if (variantId) window.location.href = `/variants/${variantId}`;
+        if (variantId) window.location.href = `/variants/view_variant/${variantId}`;
       };
     }
   }

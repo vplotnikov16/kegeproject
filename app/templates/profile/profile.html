@@ -1,7 +1,140 @@
 {% extends "base.html" %}
 
-{% block title %}Профиль{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile/profile.css') }}">
+{% endblock %}
+
+{% block title %}Профиль — {{ user.username }}{% endblock %}
 
 {% block content %}
-<h1>Профиль {{ user.username }}</h1>
+<div class="container my-4 profile-page">
+    <div class="row">
+        <aside class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="avatar-wrapper mb-3">
+                        {% if user.avatar %}
+                        <img id="profile-avatar-img" src="{{ url_for('profile.get_avatar', user_id=user.id) }}" alt="Аватар {{ user.username }}">
+                        {% else %}
+                        <img id="profile-avatar-img" src="{{ url_for('static', filename='img/ava.png') }}" alt="Аватар по умолчанию">
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3 small text-muted">
+                        {% if user.avatar and user.avatar.uploaded_at %}
+                        Аватар установлен: {{ user.avatar.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                        Аватар не установлен
+                        {% endif %}
+                    </div>
+
+                    <form id="avatar-form" method="post" enctype="multipart/form-data" action="{{ url_for('profile.update_avatar') }}">
+                        {{ avatar_form.hidden_tag() }}
+                        <div class="mb-2">
+                            {{ avatar_form.avatar_file(class="form-control form-control-sm", id="avatar-file-input") }}
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button id="avatar-upload-btn" class="btn btn-primary btn-sm" type="submit">{{ avatar_form.submit.label.text }}</button>
+
+                            {% if user.avatar %}
+                            <button id="avatar-delete-btn" class="btn btn-outline-danger btn-sm" type="button" data-action="{{ url_for('profile.delete_avatar') }}">
+                                Удалить аватар
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    <div class="mt-3">
+                        <a href="{{ url_for('profile.my_tasks') }}" class="btn btn-link btn-sm">Все мои задачи</a> ·
+                        <a href="{{ url_for('profile.my_variants') }}" class="btn btn-link btn-sm">Все мои варианты</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Обо мне</h6>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5">Имя</dt>
+                        <dd class="col-7">{{ user.first_name or '—' }}</dd>
+                        <dt class="col-5">Отчество</dt>
+                        <dd class="col-7">{{ user.middle_name or '—' }}</dd>
+                        <dt class="col-5">Фамилия</dt>
+                        <dd class="col-7">{{ user.last_name or '—' }}</dd>
+                        <dt class="col-5">Имя пользователя</dt>
+                        <dd class="col-7">{{ user.username }}</dd>
+                        <dt class="col-5">ID пользователя</dt>
+                        <dd class="col-7">{{ user.id }}</dd>
+                        <dt class="col-5">Регистрация</dt>
+                        <dd class="col-7">{{ user.registered_at.strftime('%Y-%m-%d') if user.registered_at else '—' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </aside>
+
+        <main class="col-md-8">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Последние мои задачи</h5>
+                            <a href="{{ url_for('profile.my_tasks') }}" class="btn btn-sm btn-outline-secondary">Все мои задачи</a>
+                        </div>
+                        <div class="list-group list-scroll px-3 py-2">
+                            {% if my_tasks %}
+                            {% for t in my_tasks[:5] %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">№{{ t.number }} — Задача #{{ t.id }}</div>
+                                    <div class="small text-muted text-truncate task-preview">{{ (t.statement_html | striptags)[:180] }}{% if t.statement_html|striptags|length > 180 %}…{% endif %}
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column align-items-end">
+                                    <a href="{{ url_for('tasks.view_task', task_id=t.id) }}" class="btn btn-sm btn-outline-primary mb-1">Открыть</a>
+                                    {% if t.attachments|length %}
+                                    <small class="text-muted">{{ t.attachments|length }} влож.</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-muted">У вас пока нет задач.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Последние мои варианты</h5>
+                            <a href="{{ url_for('profile.my_variants') }}" class="btn btn-sm btn-outline-secondary">Все мои варианты</a>
+                        </div>
+                        <div class="list-group list-scroll px-3 py-2">
+                            {% if my_variants %}
+                            {% for v in my_variants[:5] %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">Вариант #{{ v.id }}</div>
+                                    <div class="small text-muted">{{ v.source or '—' }} · {{ v.created_at.strftime('%Y-%m-%d') if v.created_at else '' }}</div>
+                                </div>
+                                <div class="d-flex flex-column align-items-end">
+                                    <a href="{{ url_for('variants.view_variant', variant_id=v.id) }}" class="btn btn-sm btn-outline-primary mb-1">Открыть</a>
+                                    <small class="text-muted">{{ v.tasks|length }} задач</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-muted">У вас пока нет вариантов.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/profile/profile.js') }}"></script>
 {% endblock %}
