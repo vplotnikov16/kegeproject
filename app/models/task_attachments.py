@@ -42,4 +42,3 @@ class TaskAttachment(db.Model):
             'uploaded_at': self.uploaded_at,
             'download_url': url_for('attachments.download_attachment', attachment_id=self.id),
         }
-
