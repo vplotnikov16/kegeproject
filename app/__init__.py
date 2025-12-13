@@ -7,6 +7,9 @@ from .models import User
 
 
 def _register_blueprints(flask_app):
+    from app.routes.error_handlers import error_bp
+    flask_app.register_blueprint(error_bp, url_prefix='/error')
+
     from app.routes.auth import auth_bp
     flask_app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
@@ -40,6 +43,11 @@ def _register_api_blueprints(flask_app):
     flask_app.register_blueprint(variants_api_bp, url_prefix='/api/variants')
 
 
+def _register_error_handlers(flask_app):
+    from app.routes.error_handlers import register_error_handlers
+    register_error_handlers(flask_app)
+
+
 def create_app(config_class=Config):
     flask_app = Flask(__name__)
     flask_app.config.from_object(config_class)
@@ -61,6 +69,9 @@ def create_app(config_class=Config):
 
     # регистрация api blueprint'ов
     _register_api_blueprints(flask_app)
+
+    # регистрация обработчиков ошибок
+    _register_error_handlers(flask_app)
 
     # регистрация cli
     flask_app.cli.add_command(seed)
