@@ -9,6 +9,7 @@ from app.models import Task, Variant, UserAvatar
 from app.forms.profile import AvatarUploadForm
 from app import db
 from app.services.task_services import TaskService
+from app.services.variant_services import VariantService
 from app.utils.date_utils import utcnow
 
 profile_bp = Blueprint('profile', __name__)
@@ -82,4 +83,9 @@ def my_tasks():
 @profile_bp.route('/my_variants')
 @login_required
 def my_variants():
-    return render_template('profile/my_variants.html', user=current_user)
+    variants = VariantService.get_by_author(current_user.id)
+    prepared = [v.as_dict for v in variants]
+
+    delete_form = ConfirmForm()
+
+    return render_template('profile/my_variants.html', variants=prepared, delete_form=delete_form)

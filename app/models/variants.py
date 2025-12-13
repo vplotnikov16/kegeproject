@@ -43,9 +43,20 @@ class Variant(db.Model):
 
     @property
     def as_dict(self) -> Dict:
+        from flask_login import current_user
+        from flask import url_for
+
+        can_edit = current_user.is_authenticated and (current_user.is_admin or current_user.id == self.author_id)
+
         return {
-            'id': self.id,
-            'source': self.source,
-            'created_at': self.created_at.strftime("%d.%m.%Y"),
-            'author_id': self.author_id,
+            "id": self.id,
+            "source": self.source,
+            "created_at": self.created_at.strftime("%d.%m.%Y"),
+            "tasks_count": len(self.tasks),
+            "can_edit": can_edit,
+            "author_username": self.author.username if self.author else None,
+            "author_avatar_url": url_for('profile.get_avatar', user_id=self.author.id if self.author else -1),
+            "view_url": url_for('variants.view_variant', variant_id=self.id),
+            "edit_url": url_for('variants.edit_variant', variant_id=self.id),
+            "delete_url": url_for('variants_api.delete_variant', variant_id=self.id),
         }

@@ -51,7 +51,7 @@ def variants():
 
 @variants_bp.route('/new_variant')
 def new_variant():
-    return ''
+    return render_template('variants/new_variant.html')
 
 
 @variants_bp.route('/view_variant/<int:variant_id>')
@@ -259,3 +259,4 @@ def variants_task_json(task_id):
         return jsonify(ok=False, message='Задача не найдена'), 404
 
     return jsonify(ok=True, task=t.as_dict), 200
+

@@ -1,0 +1,26 @@
+.variant-card {
+    transition: background-color 0.15s ease;
+}
+
+.variant-card:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.variant-title {
+    font-size: 1.05rem;
+}
+
+.variant-source {
+    font-style: italic;
+}
+
+.variant-meta .avatar {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+
+.results-container {
+    max-height: 75vh;
+    overflow-y: auto;
+}

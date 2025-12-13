@@ -36,6 +36,9 @@ def _register_api_blueprints(flask_app):
     from app.routes.api.profile_api import profile_api_bp
     flask_app.register_blueprint(profile_api_bp, url_prefix='/api/profile')
 
+    from app.routes.api.variant_api import variants_api_bp
+    flask_app.register_blueprint(variants_api_bp, url_prefix='/api/variants')
+
 
 def create_app(config_class=Config):
     flask_app = Flask(__name__)
