@@ -29,6 +29,6 @@ def test_foreign_keys_present(inspector):
     vt_fks = {fk['referred_table'] for fk in fk_map.get('variant_tasks', [])}
     assert 'variants' in vt_fks and 'tasks' in vt_fks
 
-    # attempt_answers -> attempts, tasks
+    # attempt_answers -> attempts, variant_tasks
     aa_fks = {fk['referred_table'] for fk in fk_map.get('attempt_answers', [])}
-    assert 'attempts' in aa_fks and 'tasks' in aa_fks
+    assert 'attempts' in aa_fks and 'variant_tasks' in aa_fks
