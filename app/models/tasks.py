@@ -1,6 +1,5 @@
-from typing import Dict, List
+from typing import Dict
 
-from flask import url_for
 from flask_login import current_user
 
 from app.extensions import db
@@ -61,7 +60,9 @@ class Task(db.Model):
     )
 
     @property
-    def as_json(self) -> Dict:
+    def as_dict(self) -> Dict:
+        from flask import url_for
+
         author_data = None
         if self.author:
             author_data = {
@@ -92,5 +93,5 @@ class Task(db.Model):
             "view_url": url_for('tasks.view_task', task_id=self.id),
             "edit_url": url_for('tasks.edit_task', task_id=self.id),
             "delete_url": url_for('tasks.delete_task', task_id=self.id),
-            'attachments': [a.as_json for a in self.attachments],
+            'attachments': [a.as_dict for a in self.attachments],
         }

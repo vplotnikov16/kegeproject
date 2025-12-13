@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, abort, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, abort, request
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -8,27 +8,6 @@ from app.models import Task, TaskAttachment
 from app.extensions import db
 
 tasks_bp = Blueprint("tasks", __name__)
-
-
-@tasks_bp.route('/api/by_numbers', methods=['POST'])
-def api_by_numbers():
-    payload = request.get_json(silent=True) or {}
-    numbers = payload.get('numbers') or []
-    try:
-        nums = [int(n) for n in numbers]
-    except Exception:
-        return jsonify({"error": "invalid numbers"}), 400
-
-    tasks = Task.query.filter(Task.number.in_(nums)).order_by(Task.number, Task.id).all()
-    return jsonify({"tasks": [t.as_json for t in tasks]})
-
-
-@tasks_bp.route('/api/by_ids', methods=['POST'])
-def api_by_ids():
-    data = request.get_json() or {}
-    ids = data.get('ids') or []
-    tasks = Task.query.filter(Task.id.in_(ids)).all()
-    return jsonify(ok=True, tasks=[t.as_json for t in tasks])
 
 
 @tasks_bp.route('/')

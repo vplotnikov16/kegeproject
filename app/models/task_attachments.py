@@ -33,7 +33,7 @@ class TaskAttachment(db.Model):
     )
 
     @property
-    def as_json(self) -> Dict:
+    def as_dict(self) -> Dict:
         return {
             'id': self.id,
             'filename': self.filename,

@@ -1,3 +1,5 @@
+from typing import Dict
+
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -100,3 +102,15 @@ class User(UserMixin, db.Model):
         """
         # FIXME: с id == 0 такой костыль, надо однажды это как-нибудь исправить
         return any(role.id == 0 for role in self.roles)
+
+    @property
+    def as_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'username': self.username,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'middle_name': self.middle_name or '',
+            'registered_at': self.registered_at.strftime("%d.%m.%Y"),
+            'avatar': self.avatar.url,
+        }
