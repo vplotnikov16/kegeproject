@@ -259,4 +259,3 @@ def variants_task_json(task_id):
         return jsonify(ok=False, message='Задача не найдена'), 404
 
     return jsonify(ok=True, task=t.as_dict), 200
-
