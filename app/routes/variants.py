@@ -113,7 +113,7 @@ def add_task(variant_id):
         db.session.rollback()
         return jsonify(ok=False, message="Ошибка добавления"), 500
 
-    return jsonify(ok=True, task=task.as_json), 200
+    return jsonify(ok=True, task=task.as_dict), 200
 
 
 @variants_bp.route('/<int:variant_id>/remove_task', methods=['POST'])
@@ -193,7 +193,7 @@ def move_task(variant_id):
 @login_required
 def task_json(task_id):
     task = Task.query.get_or_404(task_id)
-    return jsonify(ok=True, task=task.as_json), 200
+    return jsonify(ok=True, task=task.as_dict), 200
 
 
 def _strip_tags(text: str) -> str:
@@ -258,4 +258,4 @@ def variants_task_json(task_id):
     if not t:
         return jsonify(ok=False, message='Задача не найдена'), 404
 
-    return jsonify(ok=True, task=t.as_json), 200
+    return jsonify(ok=True, task=t.as_dict), 200

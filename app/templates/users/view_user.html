@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile/profile.css') }}">
+{% endblock %}
+
+{% block title %}Пользователь — {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container my-4 profile-page">
+    <div class="row">
+        <!-- Левая колонка -->
+        <aside class="col-md-4 mb-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="avatar-wrapper mb-3">
+                        {% if user.avatar %}
+                        <img src="{{ url_for('profile.get_avatar', user_id=user.id) }}"
+                             alt="Аватар {{ user.username }}">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='img/ava.png') }}"
+                             alt="Аватар по умолчанию">
+                        {% endif %}
+                    </div>
+
+                    <div class="small text-muted mb-3">
+                        {% if user.avatar %}
+                        Аватар установлен:
+                        {{ user.avatar.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                        Аватар не установлен
+                        {% endif %}
+                    </div>
+
+                    {% if is_admin %}
+                    <!-- Админ: редактирование -->
+                    <form method="post" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-2">
+                            {{ form.avatar_file(class="form-control form-control-sm") }}
+                        </div>
+
+                        <div class="mb-2">
+                            {{ form.username(class="form-control form-control-sm", type="username", placeholder="Имя пользователя") }}
+                        </div>
+
+                        <div class="mb-2">
+                            {{ form.last_name(class="form-control form-control-sm", type="last_name", placeholder="Фамилия") }}
+                            {% for error in form.last_name.errors %}
+                            <div class="alert alert-danger" role="alert">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-2">
+                            {{ form.first_name(class="form-control form-control-sm", type="first_name", placeholder="Имя") }}
+                            {% for error in form.first_name.errors %}
+                            <div class="alert alert-danger" role="alert">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-2">
+                            {{ form.middle_name(class="form-control form-control-sm", type="middle_name", placeholder="Отчество") }}
+                            {% for error in form.middle_name.errors %}
+                            <div class="alert alert-danger" role="alert">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="btn-submit">
+                            {{ form.submit(class="btn btn-primary btn-sm", type="submit") }}
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Информация -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Информация</h6>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5">ФИО</dt>
+                        <dd class="col-7">
+                            {{ user.last_name }} {{ user.first_name }} {{ user.middle_name }}
+                        </dd>
+
+                        <dt class="col-5">Username</dt>
+                        <dd class="col-7">{{ user.username }}</dd>
+
+                        <dt class="col-5">ID</dt>
+                        <dd class="col-7">{{ user.id }}</dd>
+
+                        <dt class="col-5">Регистрация</dt>
+                        <dd class="col-7">
+                            {{ user.registered_at.strftime('%Y-%m-%d') if user.registered_at else '—' }}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Правая колонка -->
+        <main class="col-md-8">
+            <div class="row g-3">
+                <!-- Задачи -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Последние задачи пользователя</h5>
+                        </div>
+                        <div class="list-group list-scroll px-3 py-2">
+                            {% if my_tasks %}
+                            {% for t in my_tasks %}
+                            <div class="list-group-item">
+                                №{{ t.number }} — Задача #{{ t.id }}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-muted">
+                                Нет задач
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Варианты -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="mb-0">Последние варианты пользователя</h5>
+                        </div>
+                        <div class="list-group list-scroll px-3 py-2">
+                            {% if my_variants %}
+                            {% for v in my_variants %}
+                            <div class="list-group-item">
+                                Вариант #{{ v.id }}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-muted">
+                                Нет вариантов
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

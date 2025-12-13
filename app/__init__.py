@@ -29,6 +29,14 @@ def _register_blueprints(flask_app):
     flask_app.register_blueprint(variants_bp, url_prefix='/variants')
 
 
+def _register_api_blueprints(flask_app):
+    from app.routes.api.tasks_api import tasks_api_bp
+    flask_app.register_blueprint(tasks_api_bp, url_prefix='/api/tasks')
+
+    from app.routes.api.profile_api import profile_api_bp
+    flask_app.register_blueprint(profile_api_bp, url_prefix='/api/profile')
+
+
 def create_app(config_class=Config):
     flask_app = Flask(__name__)
     flask_app.config.from_object(config_class)
@@ -47,6 +55,9 @@ def create_app(config_class=Config):
 
     # регистрация blueprint'ов
     _register_blueprints(flask_app)
+
+    # регистрация api blueprint'ов
+    _register_api_blueprints(flask_app)
 
     # регистрация cli
     flask_app.cli.add_command(seed)

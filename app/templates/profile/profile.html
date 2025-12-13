@@ -38,7 +38,7 @@
                             <button id="avatar-upload-btn" class="btn btn-primary btn-sm" type="submit">{{ avatar_form.submit.label.text }}</button>
 
                             {% if user.avatar %}
-                            <button id="avatar-delete-btn" class="btn btn-outline-danger btn-sm" type="button" data-action="{{ url_for('profile.delete_avatar') }}">
+                            <button id="avatar-delete-btn" class="btn btn-outline-danger btn-sm" type="button" data-action="{{ url_for('profile_api.delete_avatar') }}">
                                 Удалить аватар
                             </button>
                             {% endif %}

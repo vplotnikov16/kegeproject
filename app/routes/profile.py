@@ -6,9 +6,9 @@ from flask_login import login_required, current_user
 
 from app.forms.generic import ConfirmForm
 from app.models import Task, Variant, UserAvatar
-from app.utils.text_utils import make_snippet
 from app.forms.profile import AvatarUploadForm
 from app import db
+from app.services.task_services import TaskService
 from app.utils.date_utils import utcnow
 
 profile_bp = Blueprint('profile', __name__)
@@ -26,7 +26,7 @@ def profile():
 
 @profile_bp.get("/avatar/<int:user_id>")
 def get_avatar(user_id):
-    avatar = UserAvatar.query.get(user_id)
+    avatar = UserAvatar.query.filter_by(user_id=user_id).first()
     if not avatar:
         default_path = os.path.join(current_app.root_path, "static", "img", "ava.png")
         if not os.path.exists(default_path):
@@ -62,21 +62,6 @@ def update_avatar():
     return redirect(url_for('profile.profile'))
 
 
-@profile_bp.route('/delete_avatar', methods=['POST'])
-@login_required
-def delete_avatar():
-    ua = current_user.avatar
-    if not ua:
-        return jsonify(ok=False, message='Аватар отсутствует'), 404
-    try:
-        db.session.delete(ua)
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        return jsonify(ok=False, message='Ошибка удаления'), 500
-    return jsonify(ok=True), 200
-
-
 @profile_bp.route('/stats')
 @login_required
 def stats():
@@ -86,10 +71,9 @@ def stats():
 @profile_bp.route('/my_tasks')
 @login_required
 def my_tasks():
-    q = Task.query.filter_by(author_id=current_user.id).order_by(Task.published_at.desc())
-    tasks = q.all()
+    tasks = TaskService.get_by_author(current_user.id)
 
-    prepared = [t.as_json for t in tasks]
+    prepared = [t.as_dict for t in tasks[-5:]]
 
     delete_form = ConfirmForm()
     return render_template('profile/my_tasks.html', tasks=prepared, delete_form=delete_form)

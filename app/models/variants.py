@@ -1,3 +1,5 @@
+from typing import Dict
+
 from app.extensions import db
 from app.utils.date_utils import utcnow
 
@@ -38,3 +40,12 @@ class Variant(db.Model):
         'Attempt',
         back_populates='variant',
     )
+
+    @property
+    def as_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'source': self.source,
+            'created_at': self.created_at.strftime("%d.%m.%Y"),
+            'author_id': self.author_id,
+        }

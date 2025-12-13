@@ -34,7 +34,7 @@ function renderTasksList(container, tasks) {
     let authorEl = null;
     if (t.author && (t.author.first_name || t.author.last_name)) {
       const authorName = `${t.author.first_name || ''} ${t.author.last_name || ''}`.trim();
-      const authorUrl = t.author.id ? `/users/view/${t.author.id}` : '#';
+      const authorUrl = t.author.id ? `/users/view_user/${t.author.id}` : '#';
       const authorLink = el('a', { href: authorUrl }, authorName || '—');
       authorEl = el('div', { class: 'small text-muted mt-1' },
         el('strong', {}, 'Автор: '),
@@ -93,7 +93,7 @@ function renderTasksList(container, tasks) {
 }
 
 async function fetchByKims(kims) {
-  const resp = await fetch('/tasks/api/by_numbers', {
+  const resp = await fetch('/api/tasks/by_numbers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ numbers: kims })
@@ -103,7 +103,7 @@ async function fetchByKims(kims) {
 }
 
 async function fetchByIds(ids) {
-  const resp = await fetch('/tasks/api/by_ids', {
+  const resp = await fetch('/api/tasks/by_ids', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ ids: ids })
