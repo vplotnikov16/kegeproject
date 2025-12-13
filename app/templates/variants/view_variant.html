@@ -11,7 +11,7 @@
                 {% if variant.source %}Источник: {{ variant.source }} · {% endif %}
                 {% if variant.created_at %}Создан: {{ variant.created_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
                 {% if variant.author %}
-                · <strong>Автор:</strong> <a href="{{ url_for('users.view', user_id=variant.author.id) }}">{{ variant.author.first_name }} {{ variant.author.last_name }}</a>
+                · <strong>Автор:</strong> <a href="{{ url_for('users.view_user', user_id=variant.author.id) }}">{{ variant.author.first_name }} {{ variant.author.last_name }}</a>
                 {% endif %}
             </div>
         </div>

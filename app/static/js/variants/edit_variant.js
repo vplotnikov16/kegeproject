@@ -296,3 +296,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.__moveTask = moveTask;
 });
+
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.js-delete-variant');
+    if (!btn) return;
+
+    if (!confirm('Вы уверены, что хотите удалить вариант целиком?')) return;
+
+    const url = btn.dataset.url;
+    const redirectUrl = btn.dataset.redirect;
+
+    try {
+        const resp = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || !data.ok) {
+            alert(data.message || 'Ошибка удаления варианта');
+            return;
+        }
+
+        window.location.href = redirectUrl;
+
+    } catch (err) {
+        console.error(err);
+        alert('Ошибка сети');
+    }
+});

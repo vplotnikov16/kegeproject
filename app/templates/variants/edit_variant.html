@@ -19,8 +19,25 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ url_for('variants.variants') }}" class="btn btn-outline-secondary">К странице вариантов</a>
-            <a href="{{ url_for('variants.view_variant', variant_id=variant.id) }}" class="btn btn-primary">Просмотреть</a>
+            {% if current_user.is_authenticated and (current_user.is_admin or variant.author_id == current_user.id) %}
+            <button
+                    type="button"
+                    class="btn btn-outline-danger js-delete-variant"
+                    data-url="{{ url_for('variants_api.delete_variant', variant_id=variant.id) }}"
+                    data-redirect="{{ url_for('variants.variants') }}">
+                Удалить вариант
+            </button>
+            {% endif %}
+
+            <a href="{{ url_for('variants.view_variant', variant_id=variant.id) }}"
+               class="btn btn-primary">
+                Просмотр варианта
+            </a>
+
+            <a href="{{ url_for('variants.variants') }}"
+               class="btn btn-outline-secondary">
+                К странице вариантов
+            </a>
         </div>
     </div>
 
