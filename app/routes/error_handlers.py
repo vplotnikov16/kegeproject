@@ -8,7 +8,7 @@ error_bp = Blueprint("error", __name__)
 
 @error_bp.route("/<int:error_code>")
 def error_test(error_code: int):
-    if error_code not in _get_all_handled_codes().keys():
+    if error_code not in _get_all_handled_codes():
         return abort(404)
     abort(error_code)
 

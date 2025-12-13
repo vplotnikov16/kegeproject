@@ -19,11 +19,16 @@ class Variant(db.Model):
         db.DateTime,
         default=utcnow,
     )
+    duration = db.Column(
+        db.Integer,
+        nullable=False,
+        default=14100,
+    )
 
     author_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id', ondelete='SET NULL'),
-        nullable=True,  # сначала делаем nullable, чтобы миграция не ломала старые строки
+        nullable=True,
         index=True,
     )
     author = db.relationship('User', back_populates='variants', lazy='joined')
@@ -52,6 +57,7 @@ class Variant(db.Model):
             "id": self.id,
             "source": self.source,
             "created_at": self.created_at.strftime("%d.%m.%Y"),
+            "duration": self.duration,
             "tasks_count": len(self.tasks),
             "can_edit": can_edit,
             "author_username": self.author.username if self.author else None,

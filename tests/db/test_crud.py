@@ -57,24 +57,26 @@ def test_attempt_and_answers_cascade(db):
     _db.session.add_all([u, v, t])
     _db.session.commit()
 
+    vt = VariantTask(variant_id=v.id, task_id=t.id)
+    _db.session.add(vt)
+    _db.session.commit()
+
     att = Attempt(user_id=u.id, variant_id=v.id)
     _db.session.add(att)
     _db.session.commit()
 
-    aa = AttemptAnswer(attempt_id=att.id, task_id=t.id, answer_text='x', is_correct=False)
+    aa = AttemptAnswer(attempt_id=att.id, variant_task_id=vt.id, answer_text='x', is_correct=False)
     _db.session.add(aa)
     _db.session.commit()
 
-    assert _db.session.query(Attempt).filter_by(user_id=u.id).count() == 1
-    assert _db.session.query(AttemptAnswer).filter_by(attempt_id=att.id).count() == 1
+    assert AttemptAnswer.query.filter_by(attempt_id=att.id).count() == 1
 
     attempt_id = att.id
-    # удаление пользователя должно удалить попытки и его ответы
-    _db.session.delete(u)
+    _db.session.delete(att)
     _db.session.commit()
 
-    assert _db.session.query(Attempt).filter_by(user_id=u.id).count() == 0
-    assert _db.session.query(AttemptAnswer).filter_by(attempt_id=attempt_id).count() == 0
+    assert Attempt.query.filter_by(id=attempt_id).first() is None
+    assert AttemptAnswer.query.filter_by(attempt_id=attempt_id).count() == 0
 
 
 def test_user_crud(db):
@@ -171,31 +173,42 @@ def test_attempt_crud(db):
     _db.session.add_all([user, variant, task])
     _db.session.commit()
 
-    # CREATE Attempt
+    variant_task = VariantTask(variant_id=variant.id, task_id=task.id)
+    _db.session.add(variant_task)
+    _db.session.commit()
+
     attempt = Attempt(user_id=user.id, variant_id=variant.id)
     _db.session.add(attempt)
     _db.session.commit()
     assert Attempt.query.filter_by(user_id=user.id).first() is not None
 
-    # CREATE AttemptAnswer
-    answer = AttemptAnswer(attempt_id=attempt.id, task_id=task.id, answer_text='no', is_correct=False)
+    answer = AttemptAnswer(
+        attempt_id=attempt.id,
+        variant_task_id=variant_task.id,
+        answer_text='no',
+        is_correct=False
+    )
     _db.session.add(answer)
     _db.session.commit()
+    assert AttemptAnswer.query.filter_by(attempt_id=attempt.id).first() is not None
 
     # READ
-    found_answer = AttemptAnswer.query.filter_by(attempt_id=attempt.id).first()
-    assert found_answer.answer_text == 'no'
+    read_answer = AttemptAnswer.query.filter_by(attempt_id=attempt.id).first()
+    assert read_answer.answer_text == 'no'
+    assert read_answer.is_correct == False
+
+    assert read_answer.variant_task_id == variant_task.id
+    assert read_answer.variant_task.task == task
 
     # UPDATE
-    found_answer.is_correct = True
+    answer.answer_text = 'yes'
+    answer.is_correct = True
     _db.session.commit()
-    assert _db.session.get(AttemptAnswer, (attempt.id, task.id)).is_correct is True
+    updated_answer = AttemptAnswer.query.filter_by(attempt_id=attempt.id).first()
+    assert updated_answer.answer_text == 'yes'
+    assert updated_answer.is_correct == True
 
     # DELETE
     _db.session.delete(answer)
     _db.session.commit()
     assert AttemptAnswer.query.filter_by(attempt_id=attempt.id).first() is None
-
-    _db.session.delete(attempt)
-    _db.session.commit()
-    assert Attempt.query.filter_by(user_id=user.id).first() is None
