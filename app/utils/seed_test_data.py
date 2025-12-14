@@ -1,7 +1,9 @@
 import random
-from faker import Faker
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+from faker import Faker
+
+from app.utils.date_utils import utcnow
 from run_in_venv import get_project_root
 
 # Параметры (можно менять)
@@ -22,14 +24,13 @@ MIDDLE_NAME_PROBABILITY = 0.7
 SOURCE_PROBABILITY = 0.6
 
 
-def create_test_data(app, db):
-    from app.models import User, Task, Variant, VariantTask
-
-    fake = Faker('ru_RU')
+def create_users(db, fake):
+    from app.models import User
 
     print(f"Создание {X} пользователей...")
     users = []
-    for i in range(X):
+
+    for _ in range(X):
         first_name = fake.first_name()
         last_name = fake.last_name()
         middle_name = fake.middle_name() if random.random() < MIDDLE_NAME_PROBABILITY else None
@@ -42,7 +43,7 @@ def create_test_data(app, db):
             first_name=first_name,
             last_name=last_name,
             middle_name=middle_name,
-            registered_at=datetime.utcnow() - timedelta(days=random.randint(0, 365))
+            registered_at=utcnow() - timedelta(days=random.randint(0, 365))
         )
         user.set_password('P@ssw0rd')
 
@@ -52,10 +53,17 @@ def create_test_data(app, db):
     db.session.commit()
     print(f"Создано {len(users)} пользователей")
 
+    return users
+
+
+def create_tasks(db, fake, users):
+    from app.models import Task
+
     # 2. Создание Y задач
     print(f"\nСоздание {Y} задач...")
     tasks = []
-    for i in range(Y):
+
+    for _ in range(Y):
         # Генерация номера задачи от 1 до 27, но если 19-21, то 19
         number = random.randint(1, 27)
         if 19 <= number <= 21:
@@ -75,7 +83,7 @@ def create_test_data(app, db):
             number=number,
             statement_html=statement_html,
             answer=answer,
-            published_at=datetime.utcnow() - timedelta(days=random.randint(0, 180)),
+            published_at=utcnow() - timedelta(days=random.randint(0, 180)),
             source=fake.sentence() if random.random() < SOURCE_PROBABILITY else None,
             author=random.choice(users) if random.random() < 0.8 else None  # 80% задач с автором
         )
@@ -86,15 +94,21 @@ def create_test_data(app, db):
     db.session.commit()
     print(f"Создано {len(tasks)} задач")
 
+    return tasks
+
+
+def create_variants(db, fake, users):
+    from app.models import Variant
+
     print(f"\nСоздание {Z} вариантов...")
     variants = []
 
     potential_authors = [user for user in users if random.random() < VARIANT_PROBABILITY]
 
-    for i in range(Z):
+    for _ in range(Z):
         variant = Variant(
             source=fake.sentence() if random.random() < SOURCE_PROBABILITY else None,
-            created_at=datetime.utcnow() - timedelta(days=random.randint(0, 90)),
+            created_at=utcnow() - timedelta(days=random.randint(0, 90)),
             duration=random.choice([14100, 10800, 7200]),  # разная длительность
             author=random.choice(potential_authors) if potential_authors and random.random() < 0.9 else None
         )
@@ -105,7 +119,13 @@ def create_test_data(app, db):
     db.session.commit()
     print(f"Создано {len(variants)} вариантов")
 
-    print(f"\nСоздание связей вариантов с задачами...")
+    return variants, potential_authors
+
+
+def link_variants_tasks(db, variants, tasks):
+    from app.models import VariantTask
+
+    print("Создание связей вариантов с задачами...")
     variant_tasks_count = 0
 
     for variant in variants:
@@ -117,7 +137,7 @@ def create_test_data(app, db):
 
         selected_tasks = available_tasks[:tasks_in_variant]
 
-        for i, task in enumerate(selected_tasks, 1):
+        for task in selected_tasks:
             # Создаем связь вариант-задача
             variant_task = VariantTask(
                 variant=variant,
@@ -129,6 +149,10 @@ def create_test_data(app, db):
     db.session.commit()
     print(f"Создано {variant_tasks_count} связей вариантов с задачами")
 
+    return variant_tasks_count
+
+
+def print_statistics(users, tasks, variants, potential_authors, variant_tasks_count):
     print(f"\n{'=' * 50}")
     print("СТАТИСТИКА:")
     print(f"{'=' * 50}")
@@ -152,11 +176,28 @@ def create_test_data(app, db):
     print(f"{'=' * 50}")
     print("\nТестовые данные успешно созданы!")
     print("\nДоступные тестовые пользователи:")
-    for user in users:  # Показываем первых 5 пользователей
+    for user in users:
         print(f"  Логин: {user.username}, Пароль: password123")
 
 
-if __name__ == '__main__':
+def create_test_data(db):
+    fake = Faker('ru_RU')
+
+    users = create_users(db, fake)
+    tasks = create_tasks(db, fake, users)
+    variants, potential_authors = create_variants(db, fake, users)
+    variant_tasks_count = link_variants_tasks(db, variants, tasks)
+
+    print_statistics(
+        users=users,
+        tasks=tasks,
+        variants=variants,
+        potential_authors=potential_authors,
+        variant_tasks_count=variant_tasks_count
+    )
+
+
+def main():
     import sys
 
     from app import create_app
@@ -167,4 +208,8 @@ if __name__ == '__main__':
     app = create_app()
 
     with app.app_context():
-        create_test_data(app, db)
+        create_test_data(db)
+
+
+if __name__ == '__main__':
+    main()

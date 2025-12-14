@@ -110,6 +110,7 @@ class User(UserMixin, db.Model):
 
     @property
     def as_dict(self) -> Dict:
+        from flask import url_for
         return {
             'id': self.id,
             'username': self.username,
@@ -117,5 +118,5 @@ class User(UserMixin, db.Model):
             'last_name': self.last_name,
             'middle_name': self.middle_name or '',
             'registered_at': self.registered_at.strftime("%d.%m.%Y"),
-            'avatar': self.avatar.url,
+            'avatar': url_for('profile.get_avatar', user_id=self.id),
         }
