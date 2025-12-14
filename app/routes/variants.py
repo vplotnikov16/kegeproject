@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app import db
 from app.forms.variants import VariantGenerationForm, VariantEditForm
 from app.models import Task, Variant, VariantTask
+from app.services.attempt_service import AttemptService
 from app.utils.variant_utils import build_tasks_set
 
 variants_bp = Blueprint('variants', __name__, url_prefix='/variants')
@@ -58,6 +59,21 @@ def new_variant():
 def view_variant(variant_id: int):
     variant = Variant.query.get_or_404(variant_id)
     return render_template('variants/view_variant.html', variant=variant)
+
+
+@variants_bp.route('/<int:variant_id>/start-exam', methods=['GET', 'POST'])
+@login_required
+def start_exam(variant_id: int):
+    variant = Variant.query.get_or_404(variant_id)
+
+    task_count = VariantTask.query.filter_by(variant_id=variant.id).count()
+    if task_count == 0:
+        flash('В варианте нет заданий', 'error')
+        return redirect(url_for('variants.view_variant', variant_id=variant.id))
+
+    attempt = AttemptService.create_attempt(current_user.id, variant.id)
+
+    return redirect(url_for('attempts.attempt', attempt_id=attempt.id))
 
 
 @variants_bp.route('/edit_variant/<int:variant_id>', methods=['GET', 'POST'])
