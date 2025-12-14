@@ -67,6 +67,11 @@ class User(UserMixin, db.Model):
         back_populates='author',
         passive_deletes=True
     )
+    attempts = db.relationship(
+        'Attempt',
+        back_populates='examinee',
+        passive_deletes=True
+    )
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

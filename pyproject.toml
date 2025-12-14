@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.group.main.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.10,<4.0"
 flask = "^3.1.2"
 wtforms = "^3.2.1"
 flask-wtf = "^1.2.2"
@@ -24,6 +24,7 @@ pytest = "^7.4"
 pytest-cov = "^4.0"
 black = "^24.0"
 isort = "^6.0"
+faker = "^38.2.0"
 
 [build-system]
 requires = ["poetry-core"]

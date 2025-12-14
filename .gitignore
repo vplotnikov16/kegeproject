@@ -214,3 +214,4 @@ app.db
 /.vs/
 /kegeproject.pyproj
 /kegeproject.sln
+/app/utils/tasks_parsing/
