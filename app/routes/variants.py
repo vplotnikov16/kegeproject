@@ -61,7 +61,7 @@ def view_variant(variant_id: int):
     return render_template('variants/view_variant.html', variant=variant)
 
 
-@variants_bp.route('/<int:variant_id>/start-exam', methods=['GET', 'POST'])
+@variants_bp.route('/start_exam/<int:variant_id>', methods=['GET', 'POST'])
 @login_required
 def start_exam(variant_id: int):
     variant = Variant.query.get_or_404(variant_id)

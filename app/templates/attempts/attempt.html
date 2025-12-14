@@ -11,7 +11,7 @@
 <div class="attempt-layout">
     <div class="attempt-navbar">
         <div class="attempt-navbar-left">
-            <div class="timer-display" id="timer">03:30:00</div>
+            <div class="timer-display" id="timer"></div>
             <span>КИМ № {{ variant.id }}</span>
             <span>БР № {{ attempt.id }}</span>
         </div>
@@ -27,16 +27,14 @@
         <div class="attempt-sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title">Дано ответов</div>
-                <div class="sidebar-stat" id="answeredCount">0</div>
-                <div class="sidebar-stat-label" id="answeredLabel">0/{{ total_tasks }} ответов</div>
-                <button class="info-btn" id="showInfoBtn">ℹ Информация</button>
+                <div class="sidebar-stat-label" id="answeredLabel">0/{{ total_tasks }}</div>
+                <button class="info-btn" id="showInfoBtn">i</button>
             </div>
-
             <div class="sidebar-section">
                 <div class="task-buttons" id="taskButtons">
                     {% for vt in variant_tasks %}
                     <button class="task-btn" data-variant-task-id="{{ vt.id }}" data-task-number="{{ vt.task.number }}">
-                        № {{ vt.task.number }}
+                        {{ vt.task.number }}
                     </button>
                     {% endfor %}
                 </div>
@@ -50,11 +48,17 @@
                         <p>В заданиях используются следующие соглашения.</p>
                         <p>
                             <span>1</span> Обозначения для логических связок (операций):
+                            <br>
                             <span>a)</span> отрицание (инверсия, логическое НЕ) обозначается ¬ (например, ¬А);
+                            <br>
                             <span>b)</span> конъюнкция (логическое умножение, логическое И) обозначается ∧ (например, А ∧ В) либо &amp; (например, А &amp; В);
+                            <br>
                             <span>c)</span> дизъюнкция (логическое сложение, логическое ИЛИ) обозначается ∨ (например, А ∨ В) либо | (например, А | В);
+                            <br>
                             <span>d)</span> следование (импликация) обозначается → (например, А → В);
+                            <br>
                             <span>e)</span> тождество обозначается ≡ (например, A ≡ B); выражение A ≡ B истинно тогда и только тогда, когда значения A и B совпадают (либо они оба истинны, либо они оба ложны);
+                            <br>
                             <span>f)</span> символ 1 используется для обозначения истины (истинного высказывания); символ 0 – для обозначения лжи (ложного высказывания).
                         </p>
                         <p>
@@ -96,7 +100,7 @@
         attemptId: {{ attempt.id }},
         variantId: {{ variant.id }},
         duration: {{ variant.duration }},
-        startedAt: '{{ attempt.started_at.isoformat() }}',
+        startedAt: '{{ attempt.started_at.isoformat() }}Z',
         finishedAt: {{ 'null' if not attempt.finished_at else "'" + attempt.finished_at.isoformat() + "'" }}
     };
     initializeAttempt(attemptData);

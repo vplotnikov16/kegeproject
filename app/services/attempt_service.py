@@ -60,7 +60,11 @@ class AttemptService:
 
         return {
             'attempt': attempt.as_dict,
-            'tasks': [vt.task.as_dict for vt in variant_tasks],
+            'tasks': [{
+                **vt.task.as_dict,
+                'variant_task_id': vt.id,
+                'order': vt.order,
+            } for vt in variant_tasks],
             'stats': {
                 'answered': len([a for a in answers.values() if a]),
                 'total': len(variant_tasks),

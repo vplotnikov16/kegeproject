@@ -29,6 +29,7 @@
             {% if can_edit %}
             <a href="{{ url_for('variants.edit_variant', variant_id=variant.id) }}" class="btn btn-primary">Редактировать</a>
             {% endif %}
+            <a href="{{ url_for('variants.start_exam', variant_id=variant.id) }}" class="btn btn-success">Начать тестирование</a>
             <a href="{{ url_for('variants.variants') }}" class="btn btn-outline-secondary">К странице вариантов</a>
         </div>
     </div>
