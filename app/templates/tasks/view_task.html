@@ -123,7 +123,7 @@
                 <div class="card-header">Дополнительно</div>
                 <div class="card-body">
                     {# Пример: автор (если в модели появится связь author или creator) #}
-                    {% if task.author is defined %}
+                    {% if task.author%}
                     <div><strong>Автор:</strong> <a href="{{ url_for('users.view_user', user_id=task.author.id) }}">{{ task.author.first_name }} {{ task.author.last_name }}</a></div>
                     {% endif %}
 
