@@ -124,7 +124,7 @@
                 <div class="card-body">
                     {# Пример: автор (если в модели появится связь author или creator) #}
                     {% if task.author%}
-                    <div><strong>Автор:</strong> <a href="{{ url_for('users.view_user', user_id=task.author) }}">{{ task.author.first_name }} {{ task.author.last_name }}</a></div>
+                    <div><strong>Автор:</strong> <a href="{{ url_for('users.view_user', user_id=task.author.id) }}">{{ task.author.first_name }} {{ task.author.last_name }}</a></div>
                     {% endif %}
 
                     {# Пример: кнопка просмотра всех заданий с тем же источником #}
