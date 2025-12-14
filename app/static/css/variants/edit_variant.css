@@ -4,10 +4,24 @@
 
 .edit-variant-page .my-task-item {
   gap: 0.75rem;
+  overflow: hidden;
+}
+
+.edit-variant-page .my-task-item .flex-grow-1 {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.edit-variant-page .my-task-item p {
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .task-statement-preview {
-  color: #444;
+    color: #444;
+    max-height: 4em;
+    overflow: hidden;
 }
 
 .edit-variant-page .list-group-item .btn {

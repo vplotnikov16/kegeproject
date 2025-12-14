@@ -217,8 +217,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <a href="/tasks/view_task/${task.id}" class="btn btn-sm btn-outline-primary">К задаче</a>
         <button class="btn btn-sm btn-outline-secondary preview-task-btn" data-task="${task.id}">Просмотр</button>
         <div class="d-flex gap-1">
-          <button class="btn btn-sm btn-light move-up-btn" data-task="${task.id}" title="Вверх">▲</button>
-          <button class="btn btn-sm btn-light move-down-btn" data-task="${task.id}" title="Вниз">▼</button>
+          //<button class="btn btn-sm btn-light move-up-btn" data-task="${task.id}" title="Вверх">▲</button>
+          //<button class="btn btn-sm btn-light move-down-btn" data-task="${task.id}" title="Вниз">▼</button>
           <button class="btn btn-sm btn-danger remove-task-btn" data-task="${task.id}">Удалить</button>
         </div>
       </div>

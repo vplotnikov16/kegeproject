@@ -25,18 +25,6 @@ class VariantTask(db.Model):
         default=0,
         nullable=True,
     )
-    answer_type = db.Column(
-        db.String(50),
-        default='single',
-        nullable=True,
-        comment='single, double, или table'
-    )
-    answer_count = db.Column(
-        db.Integer,
-        default=1,
-        nullable=True,
-        comment='Число колонок в таблице'
-    )
 
     variant = db.relationship(
         'Variant',

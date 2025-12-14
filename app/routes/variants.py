@@ -42,8 +42,8 @@ def variants():
     db.session.add(variant)
     db.session.commit()
 
-    for task in tasks:
-        vt = VariantTask(variant_id=variant.id, task_id=task.id)
+    for i, task in enumerate(tasks):
+        vt = VariantTask(variant_id=variant.id, task_id=task.id, order=i)
         db.session.add(vt)
     db.session.commit()
 
@@ -120,9 +120,14 @@ def add_task(variant_id):
     exists = VariantTask.query.filter_by(variant_id=variant.id, task_id=task.id).first()
     if exists:
         return jsonify(ok=False, message="Задача уже в варианте"), 400
+    # Вычисляем следующий order
+    max_order = db.session.query(db.func.max(VariantTask.order)) \
+        .filter(VariantTask.variant_id == variant.id) \
+        .scalar()
 
+    next_order = (max_order or 0) + 1
     try:
-        vt = VariantTask(variant_id=variant.id, task_id=task.id)
+        vt = VariantTask(variant_id=variant.id, task_id=task.id, order=next_order)
         db.session.add(vt)
         db.session.commit()
     except IntegrityError:

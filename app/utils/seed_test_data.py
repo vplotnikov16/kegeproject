@@ -137,11 +137,12 @@ def link_variants_tasks(db, variants, tasks):
 
         selected_tasks = available_tasks[:tasks_in_variant]
 
-        for task in selected_tasks:
+        for i, task in enumerate(selected_tasks):
             # Создаем связь вариант-задача
             variant_task = VariantTask(
                 variant=variant,
-                task=task
+                task=task,
+                order=1
             )
             db.session.add(variant_task)
             variant_tasks_count += 1
