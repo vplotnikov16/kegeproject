@@ -195,7 +195,7 @@ def test_attempt_crud(db):
     # READ
     read_answer = AttemptAnswer.query.filter_by(attempt_id=attempt.id).first()
     assert read_answer.answer_text == 'no'
-    assert read_answer.is_correct == False
+    assert read_answer.is_correct is False
 
     assert read_answer.variant_task_id == variant_task.id
     assert read_answer.variant_task.task == task
@@ -206,7 +206,7 @@ def test_attempt_crud(db):
     _db.session.commit()
     updated_answer = AttemptAnswer.query.filter_by(attempt_id=attempt.id).first()
     assert updated_answer.answer_text == 'yes'
-    assert updated_answer.is_correct == True
+    assert updated_answer.is_correct is True
 
     # DELETE
     _db.session.delete(answer)

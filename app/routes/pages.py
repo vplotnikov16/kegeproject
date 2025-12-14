@@ -4,13 +4,15 @@ from flask_login import login_user, login_required, logout_user, current_user
 from app.forms.auth import RegisterForm, LoginForm
 from app.models import User
 from app.extensions import db
+from app.services.dashboard_service import DashboardService
 
 pages_bp = Blueprint("pages", __name__)
 
 
 @pages_bp.route('', methods=['GET'])
 def index():
-    return render_template("index.html")
+    dashboard_data = DashboardService.get_dashboard_data()
+    return render_template("index.html", dashboard_data=dashboard_data)
 
 
 @pages_bp.route("/login", methods=["GET", "POST"])

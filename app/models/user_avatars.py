@@ -26,4 +26,4 @@ class UserAvatar(db.Model):
 
     @property
     def url(self):
-        return url_for('profile.avatar', user_id=self.user_id)
+        return url_for('profile.get_avatar', user_id=self.user_id)
