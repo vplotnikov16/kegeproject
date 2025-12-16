@@ -3,8 +3,6 @@
 {% block title %}Главная - Статистика и аналитика{% endblock %}
 
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-<script src="{{ url_for('static', filename='js/index.js') }}" type="text/javascript"></script>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/index.css') }}"/>
 {% endblock %}
 
@@ -84,7 +82,9 @@
                 </div>
                 <div class="attempt-detail">
                     <div class="attempt-label">Правильных ответов</div>
-                    <div class="attempt-value">{{ dashboard_data.latest_attempt.correct_answers }}/{{ dashboard_data.latest_attempt.total_answers }}</div>
+                    <div class="attempt-value">{{ dashboard_data.latest_attempt.correct_answers }}/{{
+                        dashboard_data.latest_attempt.total_answers }}
+                    </div>
                 </div>
                 <div class="attempt-detail">
                     <div class="attempt-label">Результат</div>
@@ -153,11 +153,14 @@
                     <div class="list-item">
                         <div class="item-info">
                             <div class="item-title">#{{ loop.index }}. {{ performer.username }}</div>
-                            <div class="item-subtitle">{{ performer.attempts_count }} попыт{{ 'ок' if performer.attempts_count % 10 >= 5 or performer.attempts_count % 10 == 0 else ('и' if
+                            <div class="item-subtitle">{{ performer.attempts_count }} попыт{{ 'ок' if
+                                performer.attempts_count % 10 >= 5 or performer.attempts_count % 10 == 0 else ('и' if
                                 performer.attempts_count % 10 != 1 else 'ы') }}
                             </div>
                         </div>
-                        <div class="item-meta" style="color: #4ade80; font-weight: bold;">{{ performer.average_score }}%</div>
+                        <div class="item-meta" style="color: #4ade80; font-weight: bold;">{{ performer.average_score
+                            }}%
+                        </div>
                     </div>
                     {% endfor %}
                     {% else %}
@@ -228,4 +231,123 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Score Distribution Chart
+        const scoreDistCtx = document.getElementById('scoreDistributionChart');
+        if (scoreDistCtx) {
+            const scoreData = {{ dashboard_data.score_distribution|tojson }};
+
+            new Chart(scoreDistCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(scoreData),
+                    datasets: [{
+                        data: Object.values(scoreData),
+                        backgroundColor: [
+                            '#ff6b6b',
+                            '#ffa500',
+                            '#ffd93d',
+                            '#6bcf7f',
+                            '#4ade80'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed;
+                                    let suffix = 'ок';
+                                    if (value === 1) suffix = 'а';
+                                    else if (value > 1 && value < 5) suffix = 'и';
+                                    return context.label + ': ' + value + ' попыт' + suffix;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Weekly Scores Chart
+        const weeklyScoresCtx = document.getElementById('weeklyScoresChart');
+        if (weeklyScoresCtx) {
+            const weeklyData = {{ dashboard_data.weekly_scores|tojson }};
+
+            if (weeklyData.length > 0) {
+                const labels = weeklyData.map(w => w.week_start + ' - ' + w.week_end);
+                const scores = weeklyData.map(w => w.average_score);
+                const attempts = weeklyData.map(w => w.attempt_count);
+
+                new Chart(weeklyScoresCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Средний балл (%)',
+                            data: scores,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: { font: { size: 12 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function(context) {
+                                        return 'Попыток: ' + attempts[context.dataIndex];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { callback: function(value) { return value + '%'; } }
+                            }
+                        }
+                    }
+                });
+            } else {
+                weeklyScoresCtx.style.display = 'none';
+                const container = weeklyScoresCtx.parentElement;
+                if (container) {
+                    container.innerHTML += '<div class="empty-state"><p class="text-muted">Недостаточно данных для отображения графика</p></div>';
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}
