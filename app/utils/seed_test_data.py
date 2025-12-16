@@ -137,7 +137,7 @@ def link_variants_tasks(db, variants, tasks):
 
         selected_tasks = available_tasks[:tasks_in_variant]
 
-        for i, task in enumerate(selected_tasks):
+        for _, task in enumerate(selected_tasks):
             # Создаем связь вариант-задача
             variant_task = VariantTask(
                 variant=variant,
@@ -178,7 +178,7 @@ def print_statistics(users, tasks, variants, potential_authors, variant_tasks_co
     print("\nТестовые данные успешно созданы!")
     print("\nДоступные тестовые пользователи:")
     for user in users:
-        print(f"  Логин: {user.username}, Пароль: password123")
+        print(f"  Логин: {user.username}, Пароль: P@ssw0rd")
 
 
 def create_test_data(db):
