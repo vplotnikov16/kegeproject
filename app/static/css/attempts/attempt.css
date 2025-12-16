@@ -184,23 +184,6 @@ body {
     border-color: #27ae60;
 }
 
-.task-btn.answered::after {
-    content: '✓';
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #27ae60;
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-}
-
-/* Main Content Area */
 .attempt-content {
     flex: 1;
     overflow-y: auto;
@@ -228,7 +211,6 @@ body {
     }
 }
 
-/* Info Slide */
 .info-slide {
     background: white;
     padding: 30px;
@@ -253,7 +235,6 @@ body {
     font-weight: 600;
 }
 
-/* Task Slide */
 .task-slide {
     background: white;
     padding: 30px;
@@ -329,35 +310,6 @@ body {
     margin-bottom: 10px;
 }
 
-/* Answer Input Styles */
-.answer-input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #bdc3c7;
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: inherit;
-    transition: border-color 0.2s;
-}
-
-.answer-input:focus {
-    outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-}
-
-.answer-inputs-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.answer-inputs-row input {
-    width: 100%;
-}
-
-/* Table Answer Type */
 .answer-table {
     width: 100%;
     border-collapse: collapse;

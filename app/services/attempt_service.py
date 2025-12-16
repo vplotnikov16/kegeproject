@@ -54,17 +54,29 @@ class AttemptService:
         if not attempt:
             return None
 
-        variant_tasks = VariantTask.query.filter_by(variant_id=attempt.variant_id).order_by(VariantTask.order).all()
+        variant_tasks = (
+            VariantTask.query
+            .filter_by(variant_id=attempt.variant_id)
+            .order_by(VariantTask.order)
+            .all()
+        )
 
-        answers = {aa.variant_task_id: aa.answer_text for aa in attempt.answers}
+        answers = {
+            aa.variant_task_id: aa.answer_text
+            for aa in attempt.answers
+        }
 
         return {
             'attempt': attempt.as_dict,
-            'tasks': [{
-                **vt.task.as_dict,
-                'variant_task_id': vt.id,
-                'order': vt.order,
-            } for vt in variant_tasks],
+            'tasks': [
+                {
+                    **vt.task.as_dict,
+                    'variant_task_id': vt.id,
+                    'order': vt.order,
+                    'current_answer': answers.get(vt.id)  # ← ВАЖНО
+                }
+                for vt in variant_tasks
+            ],
             'stats': {
                 'answered': len([a for a in answers.values() if a]),
                 'total': len(variant_tasks),
