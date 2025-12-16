@@ -21,6 +21,7 @@ disable =
     E1102,  # отключаем проверку на not-callable
     R0401,  # ругается на циклический импорт, хотя ошибок нет, вроде
     R0911,  # какая разница, сколько у меня return'ов?
+    C0206,  # отключение consider-using-dict-items
 
 [FORMAT]
 max-line-length = 140
