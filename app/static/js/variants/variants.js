@@ -11,11 +11,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const variantTasks = document.getElementById('variant-tasks');
   const openVariantBtn = document.getElementById('open-variant-btn');
   const startExamBtn = document.getElementById('start-exam-btn');
+  const selectAllBtn = document.getElementById('select-all-btn');
 
   function parseKimKey(key) {
     if (!key) return [];
     if (key.includes('-')) {
-      const [a, b] = key.split('-', 2).map(s => parseInt(s, 10));
+      const [a, b] = key.split('-', 2).map(n => parseInt(n, 10));
       if (Number.isFinite(a) && Number.isFinite(b) && b >= a) {
         const out = [];
         for (let i = a; i <= b; i++) out.push(i);
@@ -28,61 +29,101 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function setCountEnabledForKey(key, enabled) {
-    const groupEl = document.querySelector(`#kim-count-${key}`);
-    if (groupEl) {
-      if (enabled) groupEl.removeAttribute('disabled'); else groupEl.setAttribute('disabled', 'disabled');
+    const el = document.querySelector(`#kim-count-${key}`);
+    if (el) {
+      el.disabled = !enabled;
       return;
     }
-    const nums = parseKimKey(String(key));
-    nums.forEach(n => {
-      const el = document.querySelector(`#kim-count-${n}`);
-      if (!el) return;
-      if (enabled) el.removeAttribute('disabled'); else el.setAttribute('disabled', 'disabled');
+    parseKimKey(key).forEach(n => {
+      const e = document.querySelector(`#kim-count-${n}`);
+      if (e) e.disabled = !enabled;
     });
   }
 
   function updateGenerateState() {
-    if (!generateBtn) return;
-    const any = kimCheckboxes.some(cb => cb.checked);
-    generateBtn.disabled = !any;
+    generateBtn.disabled = !kimCheckboxes.some(cb => cb.checked);
+  }
+
+  function getSelectAllState() {
+    const checkedCount = kimCheckboxes.filter(cb => cb.checked).length;
+    if (checkedCount === 0) return 'unchecked';
+    if (checkedCount === kimCheckboxes.length) return 'checked';
+    return 'partial';
+  }
+
+  function updateSelectAllUI() {
+    if (!selectAllBtn) return;
+
+    const state = getSelectAllState();
+    selectAllBtn.classList.remove(
+      'btn-outline-secondary',
+      'btn-secondary',
+      'btn-success'
+    );
+
+    if (state === 'unchecked') {
+      selectAllBtn.textContent = 'Выбрать все';
+      selectAllBtn.classList.add('btn-outline-secondary');
+    } else if (state === 'partial') {
+      selectAllBtn.textContent = 'Выбрано частично';
+      selectAllBtn.classList.add('btn-secondary');
+    } else {
+      selectAllBtn.textContent = 'Снять выбор';
+      selectAllBtn.classList.add('btn-success');
+    }
+  }
+
+  function setAllCheckboxes(checked) {
+    kimCheckboxes.forEach(cb => {
+      cb.checked = checked;
+      setCountEnabledForKey(cb.dataset.kim, checked);
+    });
+    updateGenerateState();
+    updateSelectAllUI();
+  }
+
+  if (selectAllBtn) {
+    selectAllBtn.addEventListener('click', () => {
+      const state = getSelectAllState();
+      setAllCheckboxes(state !== 'checked');
+    });
   }
 
   kimCheckboxes.forEach(cb => {
     cb.addEventListener('change', () => {
-      const key = String(cb.dataset.kim);
+      const key = cb.dataset.kim;
       const checked = cb.checked;
+
       setCountEnabledForKey(key, checked);
 
-      const nums = parseKimKey(key);
-      nums.forEach(n => {
-        const individualCb = document.querySelector(`#kim-${n}`);
-        if (individualCb && individualCb !== cb) {
-          individualCb.checked = checked;
-        }
+      parseKimKey(key).forEach(n => {
+        const ind = document.querySelector(`#kim-${n}`);
+        if (ind && ind !== cb) ind.checked = checked;
       });
 
       updateGenerateState();
+      updateSelectAllUI();
     });
   });
 
   updateGenerateState();
+  updateSelectAllUI();
 
   function collectSelection() {
     const selection = [];
     kimCheckboxes.forEach(cb => {
       if (!cb.checked) return;
-      const key = String(cb.dataset.kim);
+      const key = cb.dataset.kim;
       const nums = parseKimKey(key);
-      const groupCountEl = document.querySelector(`#kim-count-${key}`);
-      if (groupCountEl) {
-        const raw = groupCountEl.value;
-        const cnt = Math.max(1, parseInt(raw, 10) || 1);
+      const groupCount = document.querySelector(`#kim-count-${key}`);
+
+      if (groupCount) {
+        const cnt = Math.max(1, parseInt(groupCount.value, 10) || 1);
         nums.forEach(n => selection.push({ kim: n, count: cnt }));
       } else {
         nums.forEach(n => {
           const el = document.querySelector(`#kim-count-${n}`);
-          const raw = el ? el.value : '1';
-          const cnt = Math.max(1, parseInt(raw, 10) || 1);
+          const cnt = Math.max(1, parseInt(el?.value, 10) || 1);
           selection.push({ kim: n, count: cnt });
         });
       }
@@ -91,153 +132,77 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderVariantsList(items) {
-    if (!variantsList) return;
     variantsList.innerHTML = '';
     if (!items || items.length === 0) {
-      variantsList.innerHTML = `<div class="text-muted small">Ничего не найдено</div>`;
+      variantsList.innerHTML = '<div class="text-muted small">Ничего не найдено</div>';
       return;
     }
+
     items.forEach(v => {
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
       el.textContent = `Вариант #${v.id} — ${v.task_count} задач`;
+
       const meta = document.createElement('small');
       meta.className = 'text-muted';
       meta.textContent = v.source ? ` ${v.source}` : '';
       el.appendChild(meta);
+
       el.addEventListener('click', () => fetchVariantById(v.id));
       variantsList.appendChild(el);
     });
   }
 
-  if (listAllBtn) {
-    listAllBtn.addEventListener('click', async () => {
-      if (!variantsList) return;
-      variantsList.innerHTML = '<div class="text-muted small">Загрузка…</div>';
-      try {
-        const res = await fetch('/variants/search?all=1');
-        const data = await res.json();
-        if (data.ok) renderVariantsList(data.variants);
-        else variantsList.innerHTML = `<div class="alert alert-warning p-2">${data.message || 'Неизвестная ошибка'}</div>`;
-      } catch (err) {
-        variantsList.innerHTML = `<div class="alert alert-danger p-2">Ошибка: ${err}</div>`;
-      }
-    });
-  }
-
-  if (searchBtn) {
-    searchBtn.addEventListener('click', () => {
-      const id = parseInt(searchInput.value, 10);
-      if (!id) {
-        if (variantsList) variantsList.innerHTML = `<div class="alert alert-warning p-2">Введите корректный id варианта</div>`;
-        return;
-      }
-      fetchVariantById(id);
-    });
-  }
-
   async function fetchVariantById(id) {
-    if (!variantsList || !variantPreviewCard) return;
-    variantsList.innerHTML = '';
-    variantPreviewCard.classList.add('d-none');
     variantsList.innerHTML = `<div class="text-muted small">Загрузка варианта #${id}…</div>`;
+    variantPreviewCard.classList.add('d-none');
+
     try {
-      const res = await fetch(`/variants/search?id=${encodeURIComponent(id)}`);
+      const res = await fetch(`/variants/search?id=${id}`);
       const data = await res.json();
-      if (!res.ok || !data.ok) {
-        variantsList.innerHTML = `<div class="alert alert-warning p-2">${data.message || 'Вариант не найден'}</div>`;
+
+      if (!data.ok) {
+        variantsList.innerHTML = `<div class="alert alert-warning p-2">${data.message}</div>`;
         return;
       }
-      const v = data.variant;
-      showVariantPreviewFromTasks(v.tasks, v.id, v.source, v.created_at);
+
+      showVariantPreview(data.variant);
     } catch (err) {
-      variantsList.innerHTML = `<div class="alert alert-danger p-2">Ошибка: ${err}</div>`;
+      variantsList.innerHTML = `<div class="alert alert-danger p-2">${err}</div>`;
     }
   }
 
-  function showVariantPreviewFromTasks(tasks, variantId, source, createdAt) {
-    if (!variantsList || !variantPreviewCard || !variantTasks) return;
+  function showVariantPreview(v) {
     variantsList.innerHTML = '';
     variantTasks.innerHTML = '';
     variantPreviewCard.classList.remove('d-none');
-    variantTitle.textContent = `Вариант ${variantId ? ('#' + variantId) : '(предпросмотр)'}`;
-    variantMeta.textContent = `${tasks.length} задач · ${source || ''} ${createdAt ? '· ' + createdAt : ''}`;
-    tasks.forEach(t => {
+
+    variantTitle.textContent = `Вариант #${v.id}`;
+    variantMeta.textContent = `${v.tasks.length} задач · ${v.source || ''}`;
+
+    v.tasks.forEach(t => {
       const col = document.createElement('div');
       col.className = 'col-12';
-      const card = document.createElement('div');
-      card.className = 'task-card';
-      card.innerHTML = `<div class="d-flex justify-content-between align-items-start">
-          <div><strong>№${t.number}</strong> <small class="text-muted"> (id:${t.id})</small></div>
-          <div><a class="btn btn-sm btn-outline-primary" href="/tasks/view_task/${t.id}">К задаче</a></div>
-        </div>
-        <div class="mt-2"><div class="small text-muted">${sanitizePreview(t.preview)}</div></div>`;
-      col.appendChild(card);
+      col.innerHTML = `
+        <div class="task-card">
+          <strong>№${t.number}</strong>
+          <div class="small text-muted">${sanitizePreview(t.preview)}</div>
+        </div>`;
       variantTasks.appendChild(col);
     });
-    if (openVariantBtn) {
-      openVariantBtn.onclick = function () {
-        if (variantId) window.location.href = `/variants/view_variant/${variantId}`;
-      };
-    }
-    if (startExamBtn) {
-      startExamBtn.onclick = function () {
-        if (variantId) window.location.href = `/variants/start_exam/${variantId}`;
-      };
-    }
+
+    openVariantBtn.onclick = () => location.href = `/variants/view_variant/${v.id}`;
+    startExamBtn.onclick = () => location.href = `/variants/start_exam/${v.id}`;
   }
 
   function sanitizePreview(html) {
-    if (!html) return '';
-    return html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-               .replace(/<\/?[^>]+(>|$)/g, '')
-               .substring(0, 800);
-  }
-
-  async function openTaskQuickView(taskId) {
-    try {
-      const res = await fetch(`/variants/task/${taskId}`);
-      const data = await res.json();
-      if (res.ok && data.ok) showTaskModal(data.task);
-      else alert(data.message || 'Не удалось получить задачу');
-    } catch (err) {
-      alert('Ошибка: ' + err);
-    }
-  }
-
-  function showTaskModal(task) {
-    const html = `<div><h5>Задача №${task.number} (id: ${task.id})</h5>
-      <div class="mt-2">${task.statement_html || ''}</div>
-      <hr>
-      <div><strong>Ответ:</strong> ${task.answer || ''}</div></div>`;
-    if (typeof bootstrap !== 'undefined') {
-      const modalId = 'tmpTaskModal';
-      let container = document.getElementById(modalId);
-      if (container) container.remove();
-      container = document.createElement('div');
-      container.id = modalId;
-      container.innerHTML = `<div class="modal fade" tabindex="-1" id="${modalId}-inner">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Задача №${task.number}</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">${task.statement_html || ''}<hr><strong>Ответ:</strong> ${task.answer || ''}</div>
-          </div>
-        </div>
-      </div>`;
-      document.body.appendChild(container);
-      const modalEl = document.getElementById(`${modalId}-inner`);
-      const modal = new bootstrap.Modal(modalEl);
-      modal.show();
-    } else {
-      const w = window.open("", "_blank", "width=800,height=600,scrollbars=yes");
-      w.document.write(html);
-      w.document.close();
-    }
+    return (html || '')
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+      .replace(/<\/?[^>]+>/g, '')
+      .substring(0, 800);
   }
 
   window.__collectVariantSelection = collectSelection;
+
 });

@@ -21,7 +21,11 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <h6>Выберите номера КИМ</h6>
-                    <p class="text-muted small">Отметьте номера, а затем укажите, сколько задач этого номера включать в вариант.</p>
+                    <p class="text-muted small">Отметьте номера, а затем укажите, сколько задач этого номера включать в
+                        вариант.</p>
+                    <button id="select-all-btn" class="btn btn-outline-secondary btn-sm" type="button">
+                        Выбрать все
+                    </button>
                     <form id="kim-selection-form" method="post">
                         {{ form.hidden_tag() }}
                         <div class="kim-list">
@@ -30,7 +34,8 @@
                             <div class="kim-item mb-3" data-kim="{{ num }}">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="form-check">
-                                        {{ field(num=num, class="form-check-input kim-checkbox", id="kim-" + num, **{'data-kim': num}) }}
+                                        {{ field(num=num, class="form-check-input kim-checkbox", id="kim-" + num,
+                                        **{'data-kim': num}) }}
                                     </div>
                                     <label class="form-label mb-0" for="kim-{{ num }}">
                                         <strong>{{ num }}.</strong> {{ field.label.text }}
@@ -72,14 +77,17 @@
                             <label class="form-label mb-0">Номер варианта</label>
                         </div>
                         <div class="col-auto">
-                            <input id="search-number" class="form-control" type="number" min="1" placeholder="Введите id варианта">
+                            <input id="search-number" class="form-control" type="number" min="1"
+                                   placeholder="Введите id варианта">
                         </div>
                         <div class="col-auto">
                             <button id="search-btn" class="btn btn-primary" type="button">Найти</button>
-                            <button id="list-all-btn" class="btn btn-outline-secondary" type="button">Показать все</button>
+                            <button id="list-all-btn" class="btn btn-outline-secondary" type="button">Показать все
+                            </button>
                         </div>
                         <div class="col-12 mt-2">
-                            <small class="text-muted">Результаты поиска появятся ниже. Нажмите на задачу, чтобы быстро просмотреть текст.</small>
+                            <small class="text-muted">Результаты поиска появятся ниже. Нажмите на задачу, чтобы быстро
+                                просмотреть текст.</small>
                         </div>
                     </form>
                 </div>
@@ -95,7 +103,8 @@
                             <small class="text-muted" id="variant-meta"></small>
                         </div>
                         <div>
-                            <button id="start-exam-btn" class="btn btn-sm btn-outline-success">Начать тестирование</button>
+                            <button id="start-exam-btn" class="btn btn-sm btn-outline-success">Начать тестирование
+                            </button>
                             <button id="open-variant-btn" class="btn btn-sm btn-outline-primary">Открыть</button>
                         </div>
                     </div>
