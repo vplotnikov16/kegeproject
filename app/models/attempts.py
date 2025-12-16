@@ -1,3 +1,5 @@
+from typing import Dict
+
 from app.extensions import db
 from app.utils.date_utils import utcnow
 
@@ -43,6 +45,12 @@ class Attempt(db.Model):
         passive_deletes=True,
     )
 
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'variant_id', name='uq_user_variant_attempt'),
-    )
+    @property
+    def as_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'variant_id': self.variant_id,
+            'started_at': self.started_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'finished_at': self.finished_at.strftime('%Y-%m-%d %H:%M:%S') if self.finished_at else None,
+            'duration': self.variant.duration,
+        }

@@ -1,8 +1,8 @@
-"""add variant duration, attempt answer refactor
+"""снова начальная миграция
 
-Revision ID: b93aaecf9d95
+Revision ID: 43571b8bbd4f
 Revises: 
-Create Date: 2025-12-14 01:42:56.422885
+Create Date: 2025-12-14 17:50:56.654466
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b93aaecf9d95'
+revision = '43571b8bbd4f'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -90,8 +90,7 @@ def upgrade():
     sa.Column('finished_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_attempts_user_id_users'), ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['variant_id'], ['variants.id'], name=op.f('fk_attempts_variant_id_variants')),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_attempts')),
-    sa.UniqueConstraint('user_id', 'variant_id', name='uq_user_variant_attempt')
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_attempts'))
     )
     op.create_table('task_attachments',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -108,12 +107,14 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('variant_id', sa.Integer(), nullable=False),
     sa.Column('task_id', sa.Integer(), nullable=False),
+    sa.Column('order', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['task_id'], ['tasks.id'], name=op.f('fk_variant_tasks_task_id_tasks'), ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['variant_id'], ['variants.id'], name=op.f('fk_variant_tasks_variant_id_variants'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_variant_tasks')),
     sa.UniqueConstraint('variant_id', 'task_id', name='uq_variant_task')
     )
     with op.batch_alter_table('variant_tasks', schema=None) as batch_op:
+        batch_op.create_index('ix_variant_tasks_order', ['variant_id', 'order'], unique=False)
         batch_op.create_index(batch_op.f('ix_variant_tasks_task_id'), ['task_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_variant_tasks_variant_id'), ['variant_id'], unique=False)
 
@@ -148,6 +149,7 @@ def downgrade():
     with op.batch_alter_table('variant_tasks', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_variant_tasks_variant_id'))
         batch_op.drop_index(batch_op.f('ix_variant_tasks_task_id'))
+        batch_op.drop_index('ix_variant_tasks_order')
 
     op.drop_table('variant_tasks')
     op.drop_table('task_attachments')

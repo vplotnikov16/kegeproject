@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Результаты экзамена{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/attempts/results.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="results-container">
+        <div class="results-header">
+            <h1>Результаты экзамена</h1>
+            <div class="results-meta">
+                <p><strong>КИМ №</strong> <span class="badge badge-primary">{{ variant.id }}</span></p>
+                <p><strong>БР №</strong> <span class="badge badge-info">{{ attempt.id }}</span></p>
+                <p><strong>Время прохождения:</strong>
+                    <span id="attemptDuration"></span>
+                </p>
+            </div>
+        </div>
+
+        <div id="resultsTableContainer"></div>
+
+        <div class="results-footer">
+            <a href="{{ url_for('variants.view_variant', variant_id=variant.id) }}" class="btn btn-primary">
+                Назад к варианту
+            </a>
+            <a href="{{ url_for('pages.index') }}" class="btn btn-secondary">
+                На главную
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const attemptData = {
+        attemptId: {{ attempt.id }},
+        startedAt: '{{ attempt.started_at.isoformat() }}',
+        finishedAt: '{{ attempt.finished_at.isoformat() }}'
+    };
+
+    async function loadResults() {
+        try {
+            const response = await fetch(`/attempts/${attemptData.attemptId}/results`);
+            const data = await response.json();
+            renderResults(data);
+        } catch (error) {
+            console.error('Error loading results:', error);
+            document.getElementById('resultsTableContainer').innerHTML = 
+                '<div class="alert alert-danger">Ошибка при загрузке результатов</div>';
+        }
+    }
+
+    function renderResults(data) {
+        const container = document.getElementById('resultsTableContainer');
+        
+        // Calculate duration
+        const start = new Date(attemptData.startedAt);
+        const end = new Date(attemptData.finishedAt);
+        const durationMs = end - start;
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+        document.getElementById('attemptDuration').textContent = 
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        // Build results table
+        let html = `
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th class="col-kim">КИМ №</th>
+                        <th class="col-correct">Правильный ответ</th>
+                        <th class="col-user">Ответ участника</th>
+                        <th class="col-status">Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.results.forEach((result, index) => {
+            const isCorrect = normalizeAnswer(result.correct_answer) === normalizeAnswer(result.user_answer);
+            const status = result.user_answer ? 
+                (isCorrect ? '<span class="badge badge-success">Верно</span>' : '<span class="badge badge-danger">Ошибка</span>') :
+                '<span class="badge badge-secondary">Не отвечено</span>';
+
+            html += `
+                <tr class="${isCorrect && result.user_answer ? 'correct' : (!result.user_answer ? 'unanswered' : 'incorrect')}">
+                    <td class="col-kim"><strong>№ ${result.task_number}</strong></td>
+                    <td class="col-correct"><code>${escapeHtml(result.correct_answer || '—')}</code></td>
+                    <td class="col-user"><code>${escapeHtml(result.user_answer || '—')}</code></td>
+                    <td class="col-status">${status}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        // Add summary
+        const correct = data.results.filter(r => normalizeAnswer(r.correct_answer) === normalizeAnswer(r.user_answer) && r.user_answer).length;
+        html = `
+            <div class="results-summary">
+                <div class="summary-card correct">
+                    <div class="summary-number">${correct}</div>
+                    <div class="summary-label">Верных ответов</div>
+                </div>
+                <div class="summary-card total">
+                    <div class="summary-number">${data.total_tasks}</div>
+                    <div class="summary-label">Всего заданий</div>
+                </div>
+                <div class="summary-card percentage">
+                    <div class="summary-number">${Math.round((correct / data.total_tasks) * 100)}%</div>
+                    <div class="summary-label">Процент верных</div>
+                </div>
+            </div>
+        ` + html;
+
+        container.innerHTML = html;
+    }
+
+    function normalizeAnswer(answer) {
+        if (!answer) return '';
+        return String(answer).toLowerCase().trim();
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Load results when page loads
+    document.addEventListener('DOMContentLoaded', loadResults);
+</script>
+{% endblock %}

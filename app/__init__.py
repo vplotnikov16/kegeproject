@@ -31,6 +31,9 @@ def _register_blueprints(flask_app):
     from app.routes.variants import variants_bp
     flask_app.register_blueprint(variants_bp, url_prefix='/variants')
 
+    from app.routes.attempts import attempts_bp
+    flask_app.register_blueprint(attempts_bp, url_prefix='/attempts')
+
 
 def _register_api_blueprints(flask_app):
     from app.routes.api.tasks_api import tasks_api_bp

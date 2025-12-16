@@ -8,11 +8,11 @@ from run_in_venv import get_project_root
 
 # Параметры (можно менять)
 # количество пользователей
-X = 10
+X = 100
 # количество задач
-Y = 50
+Y = 500
 # количество вариантов
-Z = 15
+Z = 150
 
 # Вероятность того, что у пользователя будет вариант (чтобы у некоторых не было)
 VARIANT_PROBABILITY = 0.7
@@ -137,11 +137,12 @@ def link_variants_tasks(db, variants, tasks):
 
         selected_tasks = available_tasks[:tasks_in_variant]
 
-        for task in selected_tasks:
+        for i, task in enumerate(selected_tasks):
             # Создаем связь вариант-задача
             variant_task = VariantTask(
                 variant=variant,
-                task=task
+                task=task,
+                order=1
             )
             db.session.add(variant_task)
             variant_tasks_count += 1

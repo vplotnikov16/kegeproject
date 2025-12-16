@@ -104,9 +104,9 @@
                         {% if my_tasks %}
                         {% for t in my_tasks %}
                         <div class="list-group-item d-flex justify-content-between align-items-start my-task-item" data-task-id="{{ t.id }}">
-                            <div class="flex-grow-1">
+                            <div class="flex-grow-1 min-w-0">
                                 <div class="fw-bold">№{{ t.number }} — Задача #{{ t.id }}</div>
-                                <div class="small text-truncate" style="max-height:4em; overflow:hidden;">{{ t.statement_html | safe }}</div>
+                                <div class="small task-statement-preview">{{ t.statement_html | safe }}</div>
                             </div>
                             <div class="d-flex flex-column gap-2 align-items-end">
                                 <a href="{{ url_for('tasks.view_task', task_id=t.id) }}" class="btn btn-sm btn-outline-primary">К задаче</a>

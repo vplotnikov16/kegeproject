@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const variantMeta = document.getElementById('variant-meta');
   const variantTasks = document.getElementById('variant-tasks');
   const openVariantBtn = document.getElementById('open-variant-btn');
+  const startExamBtn = document.getElementById('start-exam-btn');
 
   function parseKimKey(key) {
     if (!key) return [];
@@ -178,6 +179,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (openVariantBtn) {
       openVariantBtn.onclick = function () {
         if (variantId) window.location.href = `/variants/view_variant/${variantId}`;
+      };
+    }
+    if (startExamBtn) {
+      startExamBtn.onclick = function () {
+        if (variantId) window.location.href = `/variants/start_exam/${variantId}`;
       };
     }
   }

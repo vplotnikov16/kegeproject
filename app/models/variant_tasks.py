@@ -20,6 +20,11 @@ class VariantTask(db.Model):
         nullable=False,
         index=True,
     )
+    order = db.Column(
+        db.Integer,
+        default=0,
+        nullable=True,
+    )
 
     variant = db.relationship(
         'Variant',
@@ -42,4 +47,5 @@ class VariantTask(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('variant_id', 'task_id', name='uq_variant_task'),
+        db.Index('ix_variant_tasks_order', 'variant_id', 'order'),
     )

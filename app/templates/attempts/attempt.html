@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>КИМ № {{ variant.id }} - БР № {{ attempt.id }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/attempts/attempt.css') }}">
+</head>
+<body>
+<div class="attempt-layout">
+    <div class="attempt-navbar">
+        <div class="attempt-navbar-left">
+            <div class="timer-display" id="timer"></div>
+            <span>КИМ № {{ variant.id }}</span>
+            <span>БР № {{ attempt.id }}</span>
+        </div>
+        <div class="attempt-navbar-right">
+            <button class="attempt-navbar-btn" id="finishEarlyBtn" title="Завершить экзамен досрочно">Завершить экзамен досрочно</button>
+            <button class="attempt-navbar-btn" id="infoBtn" title="Справочная информация">?</button>
+            <button class="attempt-navbar-btn" id="minimizeBtn" title="Свернуть">−</button>
+            <button class="attempt-navbar-btn" id="closeBtn" title="Закрыть">✕</button>
+        </div>
+    </div>
+
+    <div class="attempt-container">
+        <div class="attempt-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Дано ответов</div>
+                <div class="sidebar-stat-label" id="answeredLabel">0/{{ total_tasks }}</div>
+                <button class="info-btn" id="showInfoBtn">i</button>
+            </div>
+            <div class="sidebar-section">
+                <div class="task-buttons" id="taskButtons">
+                    {% for vt in variant_tasks %}
+                    <button class="task-btn" data-variant-task-id="{{ vt.id }}" data-task-number="{{ vt.task.number }}">
+                        {{ vt.task.number }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="attempt-content">
+            <div class="slide active" id="infoSlide">
+                <div class="info-slide">
+                    <div>
+                        <p>В заданиях используются следующие соглашения.</p>
+                        <p>
+                            <span>1</span> Обозначения для логических связок (операций):
+                            <br>
+                            <span>a)</span> отрицание (инверсия, логическое НЕ) обозначается ¬ (например, ¬А);
+                            <br>
+                            <span>b)</span> конъюнкция (логическое умножение, логическое И) обозначается ∧ (например, А ∧ В) либо &amp; (например, А &amp; В);
+                            <br>
+                            <span>c)</span> дизъюнкция (логическое сложение, логическое ИЛИ) обозначается ∨ (например, А ∨ В) либо | (например, А | В);
+                            <br>
+                            <span>d)</span> следование (импликация) обозначается → (например, А → В);
+                            <br>
+                            <span>e)</span> тождество обозначается ≡ (например, A ≡ B); выражение A ≡ B истинно тогда и только тогда, когда значения A и B совпадают (либо они оба истинны, либо они оба ложны);
+                            <br>
+                            <span>f)</span> символ 1 используется для обозначения истины (истинного высказывания); символ 0 – для обозначения лжи (ложного высказывания).
+                        </p>
+                        <p>
+                            <span>2</span> Два логических выражения, содержащие переменные, называются равносильными (эквивалентными), если значения этих выражений совпадают при любых значениях переменных. Так, выражения А → В и (¬А) ∨ В равносильны, а А ∨ В и А ∧ В неравносильны (значения выражений разные, например, при А = 1, В = 0).
+                        </p>
+                        <p>
+                            <span>3</span> Приоритеты логических операций: инверсия (отрицание), конъюнкция (логическое умножение), дизъюнкция (логическое сложение), импликация (следование), тождество. Таким образом, ¬А ∧ В ∨ С ∧ D означает то же, что и ((¬А) ∧ В) ∨ (С ∧ D). Возможна запись А ∧ В ∧ С вместо (А ∧ В) ∧ С. То же относится и к дизъюнкции: возможна запись А ∨ В ∨ С вместо (А ∨ В) ∨ С.
+                        </p>
+                        <p>
+                            <span>4</span> Обозначения Мбайт и Кбайт используются в традиционном для информатики смысле – как обозначения единиц измерения, соотношение которых с единицей «байт» выражается степенью двойки.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="taskSlidesContainer"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="finishModal">
+    <div class="modal-content">
+        <div class="modal-header">Завершить экзамен?</div>
+        <div class="modal-body">
+            Вы уверены, что хотите завершить экзамен? Эту действие нельзя отменить.
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel" onclick="document.getElementById('finishModal').classList.remove('active')">Отмена</button>
+            <button class="modal-btn confirm" id="confirmFinishBtn">Завершить</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/attempts/attempt.js') }}"></script>
+<script>
+    // Initialize attempt page
+    const attemptData = {
+        attemptId: {{ attempt.id }},
+        variantId: {{ variant.id }},
+        duration: {{ variant.duration }},
+        startedAt: '{{ attempt.started_at.isoformat() }}Z',
+        finishedAt: {{ 'null' if not attempt.finished_at else "'" + attempt.finished_at.isoformat() + "'" }}
+    };
+    initializeAttempt(attemptData);
+</script>
+</body>
+</html>
