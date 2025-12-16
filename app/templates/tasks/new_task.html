@@ -1,7 +1,8 @@
 {% extends "tasks/tasks_base.html" %}
 
 {% block head %}
-<script src="{{ url_for('static', filename='js/TinyMCE/tinymce.min.js') }}" referrerpolicy="origin" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/TinyMCE/tinymce.min.js') }}" referrerpolicy="origin"
+        crossorigin="anonymous"></script>
 {% endblock %}
 
 
@@ -9,27 +10,33 @@
 
 {% block content %}
 <h1>Новая задача</h1>
-<form class="newtask-form" action="" method="post" enctype="multipart/form-data">
+<form class="newtask-form" action="" method="post" enctype="multipart/form-data" novalidate>
     {{ form.hidden_tag() }}
     <p>{{ form.number(class="form-control", type="number", placeholder="Номер задачи в КИМ") }}</p>
     {% for error in form.number.errors %}
-        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
     {% endfor %}
 
-    <p>{{ form.statement_html(class="form-control", type="statement_html", id="statement_html", placeholder="Текст задачи") }}</p>
+    <p>{{ form.statement_html(class="form-control", id="statement_html") }}</p>
     {% for error in form.statement_html.errors %}
-        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
     {% endfor %}
 
     <p>{{ form.answer(class="form-control", type="answer", placeholder="Ответ на задачу") }}</p>
     {% for error in form.answer.errors %}
-        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
     {% endfor %}
 
     {{ form.attachments(class="form-control", multiple=True, placeholder="Файлы к задаче") }}
     {% for error in form.attachments.errors %}
-        <div class="alert alert-danger">{{ error }}</div>
+    <div class="alert alert-danger">{{ error }}</div>
     {% endfor %}
+
+    <script>
+        document.querySelector('.newtask-form').addEventListener('submit', function () {
+            tinymce.triggerSave();
+        });
+    </script>
 
     <div class="btn-submit">
         {{ form.submit(class="btn btn-primary", type="submit", method="post") }}

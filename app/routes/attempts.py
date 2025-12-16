@@ -69,7 +69,7 @@ def save_answer(attempt_id: int):
     if not answer:
         return jsonify(ok=False, error='Не удалось сохранить ответ'), 400
 
-    return jsonify(ok=True, variant_task_id=variant_task_id, updated_at=answer.updated_at.strtime('%d.%m.%Y %H:%M:%S'))
+    return jsonify(ok=True, variant_task_id=variant_task_id, updated_at=answer.updated_at.strftime('%d.%m.%Y %H:%M:%S'))
 
 
 @attempts_bp.route('/<int:attempt_id>/finish', methods=['POST'])
