@@ -76,7 +76,9 @@ class Task(db.Model):
             "variant_links_count": len(self.variant_links),
             "variant_links_ids": [vl.variant_id for vl in self.variant_links],
         }
-        can_edit = (current_user is not None) and (current_user.is_admin or self.author is not None and current_user.id == self.author.id)
+
+        can_edit = current_user.is_authenticated
+        can_edit &= current_user.is_admin or self.author is not None and current_user.id == self.author.id
         return {
             "id": self.id,
             "number": self.number,
