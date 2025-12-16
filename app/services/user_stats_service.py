@@ -50,28 +50,35 @@ class UserStatsService:
     @staticmethod
     def _is_full_variant(variant: Variant) -> bool:
         """
-        Проверить, является ли вариант полным ЕГЭ вариантом (27 заданий, номера 1-27)
+        Проверить, является ли вариант полным ЕГЭ вариантом
+        В БД хранится 25 задач (19-21 как одна), но отображаются 27 номеров (1-27)
         """
         tasks = VariantTask.query.filter_by(variant_id=variant.id).order_by(VariantTask.order).all()
-        if len(tasks) != 27:
-            return False
 
-        # Проверить номера задач
-        task_numbers = sorted([t.task.number for t in tasks])
-        expected_numbers = list(range(1, 28))
+        # Получить номера всех задач из БД
+        task_numbers = sorted(set(t.task.number for t in tasks))
+
+        # Полный вариант должен содержать номера: 1-18, 19 (за 19-21), 22-27
+        # Это 25 уникальных номеров в БД, но 27 отображаемых задач
+        expected_numbers = list(range(1, 19)) + [19] + list(range(22, 28))
+
         return task_numbers == expected_numbers
 
     @staticmethod
     def convert_to_secondary_score(primary_score: int) -> int:
         """
-        Конвертация первичного балла во вторичный (0-100)
+        Конвертация первичного балла во вторичный (0-100) по официальной шкале ЕГЭ
+        Максимум 29 первичных баллов = 100 вторичных
         """
-        # Шкала ЕГЭ информатика: всего 29 первичных баллов
-        # Соответствие: 27 первичных = 100 вторичных
-        # (примерная шкала, может быть уточнена)
-        max_primary = 27
-        secondary_score = round((primary_score / max_primary) * 100)
-        return min(secondary_score, 100)
+        # Официальная шкала ЕГЭ информатика 2024
+        score_table = {
+            0: 0,
+            1: 7, 2: 14, 3: 20, 4: 27, 5: 34, 6: 40, 7: 43, 8: 46,
+            9: 48, 10: 51, 11: 54, 12: 56, 13: 59, 14: 62, 15: 64,
+            16: 67, 17: 70, 18: 72, 19: 75, 20: 78, 21: 80, 22: 83,
+            23: 85, 24: 88, 25: 90, 26: 93, 27: 95, 28: 98, 29: 100,
+        }
+        return score_table.get(min(primary_score, 29), 100)
 
     @staticmethod
     def get_attempt_details_with_scoring(attempt_id: int, user_id: int) -> Optional[Dict[str, Any]]:
@@ -98,12 +105,13 @@ class UserStatsService:
         # Подсчёт первичных баллов
         primary_score = 0
         if is_full:
-            # Правила ЕГЭ информатика: разные задачи дают разные баллы
+            # Система баллов ЕГЭ информатика (29 максимум):
             task_scores = {
                 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1,
-                11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1,
-                21: 1, 22: 1, 23: 2, 24: 2, 25: 2, 26: 3, 27: 3,  # итого: 29 баллов
+                11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 3,
+                22: 1, 23: 1, 24: 1, 25: 1, 26: 2, 27: 2,
             }
+
             for task_num, score_info in answers_by_number.items():
                 if score_info['correct'] and task_num in task_scores:
                     primary_score += task_scores[task_num]
@@ -120,7 +128,7 @@ class UserStatsService:
             'is_full_variant': is_full,
             'answers_by_number': answers_by_number,
             'total_correct': sum(1 for v in answers_by_number.values() if v['correct']),
-            'total_answers': len(answers_by_number),
+            'total_answers': 27 if is_full else len(answers_by_number),
             'primary_score': primary_score if is_full else None,
             'secondary_score': secondary_score,
             'details_by_task': UserStatsService._get_task_details(attempt),

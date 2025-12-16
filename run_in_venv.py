@@ -139,6 +139,8 @@ def _stream_subprocess(args: List[str], cwd: Optional[Path] = None, env: Optiona
         text=True,
         bufsize=1,
         universal_newlines=True,
+        encoding='utf-8',
+        errors='replace',
     )
 
     out_lines: List[str] = []
