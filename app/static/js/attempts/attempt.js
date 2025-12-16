@@ -114,7 +114,7 @@ function setupEventListeners() {
 
     document.addEventListener('input', e => {
         if (e.target.classList.contains('answer-cell')) {
-            e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+            e.target.value = e.target.value.replace(/[^a-zA-Z0-9а-яА-Я]/g, '');
         }
     });
 

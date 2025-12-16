@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, url_for, request, redirect, flash,
 from flask_login import login_required, current_user
 
 from app.forms.generic import ConfirmForm
-from app.models import Task, Variant, UserAvatar
+from app.models import Task, Variant, UserAvatar, Attempt
 from app.forms.profile import AvatarUploadForm
 from app import db
 from app.services.task_services import TaskService
@@ -66,7 +66,42 @@ def update_avatar():
 @profile_bp.route('/stats')
 @login_required
 def stats():
-    return render_template('profile/stats.html', user=current_user)
+    from app.services.user_stats_service import UserStatsService
+
+    # Получить все попытки пользователя
+    attempts = UserStatsService.get_user_attempts(current_user.id, limit=100)
+    summary = UserStatsService.get_summary_stats(current_user.id)
+    task_performance = UserStatsService.get_performance_by_task_number(current_user.id)
+    speed_trends = UserStatsService.get_solving_speed_trends(current_user.id)
+
+    return render_template('profile/stats.html',
+                           user=current_user,
+                           attempts=attempts,
+                           summary=summary,
+                           task_performance=task_performance,
+                           speed_trends=speed_trends
+                           )
+
+
+@profile_bp.route('/attempt/<int:attempt_id>')
+@login_required
+def attempt_details(attempt_id: int):
+    from app.services.user_stats_service import UserStatsService
+
+    attempt = Attempt.query.get(attempt_id)
+    if not attempt:
+        abort(404)
+    if attempt.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+
+    details = UserStatsService.get_attempt_details_with_scoring(attempt_id, current_user.id)
+    if not details:
+        abort(404)
+
+    return render_template('profile/attempt_details.html',
+                           user=current_user,
+                           attempt_details=details
+                           )
 
 
 @profile_bp.route('/my_tasks')

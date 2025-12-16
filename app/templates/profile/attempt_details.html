@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты попытки{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>{{ attempt_details.variant_source }}</h2>
+            <p class="text-muted">{{ attempt_details.finished_at }}</p>
+        </div>
+    </div>
+
+    {% if attempt_details.is_full_variant %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="score-card primary">
+                <div class="label">Первичный балл</div>
+                <div class="value">{{ attempt_details.primary_score }}/27</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="score-card secondary">
+                <div class="label">Вторичный балл</div>
+                <div class="value">{{ attempt_details.secondary_score }}/100</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="score-card time">
+                <div class="label">Время решения</div>
+                <div class="value">{{ attempt_details.time_spent }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="tasks-results">
+        <h3>Результаты по заданиям</h3>
+        <div class="row">
+            {% for task_num in range(1, 28) %}
+            {% if task_num in attempt_details.answers_by_number %}
+            {% set answer = attempt_details.answers_by_number[task_num] %}
+            <div class="col-md-3 col-lg-2 mb-3">
+                <div class="task-result {% if answer.correct %}correct{% else %}incorrect{% endif %}">
+                    <div class="task-number">№{{ task_num }}</div>
+                    <div class="task-status">{% if answer.correct %}✓{% else %}✗{% endif %}</div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="task-details">
+        <h3>Подробно по заданиям</h3>
+        {% for task_num in range(1, 28) %}
+        {% if task_num in attempt_details.details_by_task %}
+        {% set detail = attempt_details.details_by_task[task_num] %}
+        <div class="task-detail {% if detail.correct %}correct{% else %}incorrect{% endif %}">
+            <div class="task-header">
+                <h5>Задание {{ task_num }}{% if detail.correct %}<span class="badge bg-success">Верно</span>{% else
+                    %}<span class="badge bg-danger">Неверно</span>{% endif %}</h5>
+            </div>
+            <div class="task-body">
+                <div class="answer-row">
+                    <strong>Ваш ответ:</strong> {{ detail.user_answer or 'Не заполнено' }}
+                </div>
+                {% if not detail.correct %}
+                <div class="answer-row correct-answer">
+                    <strong>Правильный ответ:</strong> {{ detail.correct_answer }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

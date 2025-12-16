@@ -1,7 +1,237 @@
 {% extends "base.html" %}
 
-{% block title %}Статистика{% endblock %}
+{% block title %}Моя статистика и аналитика{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/profile/stats.css') }}"/>
+{% endblock %}
 
 {% block content %}
-<h1>Статистика</h1>
+<div class="container-fluid stats-container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Моя статистика и аналитика</h1>
+            <p class="text-muted">Полный анализ ваших результатов, прогресс и рекомендации</p>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.total_attempts }}</div>
+                <div class="stat-label">Всего попыток</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.average_score }}%</div>
+                <div class="stat-label">Средний балл</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.best_score }}%</div>
+                <div class="stat-label">Лучший результат</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.full_variants_count }}</div>
+                <div class="stat-label">Полных вариантов</div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="attempts-tab" data-bs-toggle="tab" data-bs-target="#attempts"
+                    type="button">Попытки
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance"
+                    type="button">Результаты по заданиям
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends" type="button">
+                Тенденции скорости
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="advice-tab" data-bs-toggle="tab" data-bs-target="#advice" type="button">Советы
+                и рекомендации
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="attempts">
+            <div class="attempts-list">
+                {% if attempts %}
+                {% for attempt in attempts %}
+                <div class="attempt-card">
+                    <div class="attempt-header">
+                        <h5>{{ attempt.variant_source }}</h5>
+                        <span class="badge badge-info">{% if attempt.is_full_variant %}Полный вариант{% else %}Частичный{% endif %}</span>
+                    </div>
+                    <div class="attempt-info">
+                        <div class="info-item">
+                            <span class="label">Дата:</span>
+                            <span class="value">{{ attempt.finished_at }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Результат:</span>
+                            <span class="value score">{{ attempt.correct_answers }}/{{ attempt.total_answers }} ({{ attempt.score }}%)</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('attempts.results_page', attempt_id=attempt.id) }}"
+                       class="btn btn-sm btn-primary">Подробно</a>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <p>У вас пока нет попыток. <a href="{{ url_for('variants.variants') }}">Начните решать варианты!</a>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="performance">
+            <div class="performance-grid">
+                {% for task_num in range(1, 28) %}
+                {% set perf = task_performance[task_num] %}
+                <div class="task-card task-{{ task_num }}">
+                    <div class="task-number">Задание {{ task_num }}</div>
+                    <div class="task-stats">
+                        <div class="correct">{{ perf.correct }}/{{ perf.total }}</div>
+                        <div class="percentage"
+                             style="color: {% if perf.percentage >= 75 %}#28a745{% elif perf.percentage >= 50 %}#ffc107{% else %}#dc3545{% endif %}">
+                            {{ perf.percentage }}%
+                        </div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ perf.percentage }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="trends">
+            <div class="chart-container">
+                <canvas id="speedTrendsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="advice">
+            <div class="advice-container">
+                <div id="advice-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Speed Trends Chart
+        const speedTrendsCtx = document.getElementById('speedTrendsChart');
+        if (speedTrendsCtx) {
+            const speedTrends = {{ speed_trends|tojson }};
+
+            if (speedTrends.length > 0) {
+                const labels = speedTrends.map(t => t.date);
+                const times = speedTrends.map(t => t.time_minutes);
+
+                new Chart(speedTrendsCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Время решения (минуты)',
+                            data: times,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 5,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Минуты' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Generate Advice
+        generateAdvice({{ task_performance|tojson }}, {{ summary|tojson }});
+    });
+
+    function generateAdvice(taskPerformance, summary) {
+        const advice = [];
+
+        // Анализ слабых мест
+        const weakTasks = Object.entries(taskPerformance)
+            .filter(([_, stats]) => stats.total > 0 && stats.percentage < 50)
+            .map(([num]) => parseInt(num))
+            .sort((a, b) => a - b);
+
+        if (weakTasks.length > 0) {
+            advice.push({
+                type: 'warning',
+                title: 'Требуется внимание',
+                message: `Вы решаете ниже 50% заданий №${weakTasks.join(', №')}. Рекомендуем сосредоточиться на них.`
+            });
+        }
+
+        // Анализ сильных сторон
+        const strongTasks = Object.entries(taskPerformance)
+            .filter(([_, stats]) => stats.total > 0 && stats.percentage >= 75)
+            .map(([num]) => parseInt(num))
+            .sort((a, b) => a - b);
+
+        if (strongTasks.length > 0) {
+            advice.push({
+                type: 'success',
+                title: 'Ваши сильные стороны',
+                message: `Отлично справляетесь с заданиями №${strongTasks.join(', №')}!`
+            });
+        }
+
+        // Общие рекомендации
+        if (summary.average_score < 60) {
+            advice.push({
+                type: 'info',
+                title: 'Совет',
+                message: 'Увеличьте количество практики. Рекомендуем решать варианты регулярно.'
+            });
+        }
+
+        const container = document.getElementById('advice-content');
+        if (advice.length === 0) {
+            container.innerHTML = '<p>Хороший прогресс! Продолжайте в том же темпе.</p>';
+        } else {
+            advice.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `alert alert-${item.type === 'success' ? 'success' : (item.type === 'warning' ? 'warning' : 'info')}`;
+                div.innerHTML = `<h5>${item.title}</h5><p>${item.message}</p>`;
+                container.appendChild(div);
+            });
+        }
+    }
+</script>
 {% endblock %}
