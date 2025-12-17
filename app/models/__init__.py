@@ -8,3 +8,16 @@ from .variant_tasks import VariantTask
 from .attempts import Attempt
 from .attempt_answers import AttemptAnswer
 from .user_avatars import UserAvatar
+
+models = [
+    UserRole,
+    User,
+    Role,
+    Task,
+    TaskAttachment,
+    Variant,
+    VariantTask,
+    Attempt,
+    AttemptAnswer,
+    UserAvatar,
+]

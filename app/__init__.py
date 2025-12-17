@@ -1,9 +1,19 @@
 from flask import Flask
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from flask_admin.theme import Bootstrap4Theme
 
 from .cli import seed
 from .config import Config
 from .extensions import db, migrate, login_manager
-from .models import User
+from .models import User, Task, Variant, Attempt, AttemptAnswer
+
+
+def _register_entities_views(admin):
+    from app.admin import get_model_view
+    for model in models.models:
+        view = get_model_view(model)
+        admin.add_view(view(model, db.session, name=model.view_name()))
 
 
 def _register_blueprints(flask_app):
@@ -60,6 +70,10 @@ def create_app(config_class=Config):
 
     login_manager.init_app(flask_app)
     login_manager.login_view = 'pages.login'
+
+    # регистрация моделей в админке
+    admin = Admin(flask_app, name='Тайная комната', theme=Bootstrap4Theme())
+    _register_entities_views(admin)
 
     @login_manager.user_loader
     def load_user(user_id):

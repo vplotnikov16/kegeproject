@@ -1,10 +1,11 @@
 from typing import Dict
 
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 
 
-class Attempt(db.Model):
+class Attempt(IModel):
     __tablename__ = 'attempts'
 
     id = db.Column(
@@ -54,3 +55,10 @@ class Attempt(db.Model):
             'finished_at': self.finished_at.strftime('%Y-%m-%d %H:%M:%S') if self.finished_at else None,
             'duration': self.variant.duration,
         }
+
+    @classmethod
+    def view_name(cls) -> str:
+        return "Попытки"
+
+    def __repr__(self) -> str:
+        return f"Attempt(examinee={self.examinee}, variant={self.variant})"

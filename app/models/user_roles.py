@@ -14,3 +14,7 @@ class UserRole(db.Model):
         db.ForeignKey('roles.id', ondelete='CASCADE'),
         primary_key=True,
     )
+
+    @classmethod
+    def view_name(cls):
+        return "Роли пользователей"

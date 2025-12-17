@@ -1,5 +1,3 @@
-from flask import url_for
-
 from app.extensions import db
 from app.utils.date_utils import utcnow
 
@@ -24,6 +22,11 @@ class UserAvatar(db.Model):
 
     user = db.relationship('User', back_populates='avatar', passive_deletes=True)
 
+    @classmethod
+    def view_name(cls) -> str:
+        return "Аватарки пользователей"
+
     @property
     def url(self):
+        from flask import url_for
         return url_for('profile.get_avatar', user_id=self.user_id)

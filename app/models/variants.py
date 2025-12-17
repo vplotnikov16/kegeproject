@@ -46,6 +46,10 @@ class Variant(db.Model):
         back_populates='variant',
     )
 
+    @classmethod
+    def view_name(cls) -> str:
+        return "Варианты"
+
     @property
     def as_dict(self) -> Dict:
         from flask_login import current_user
@@ -68,3 +72,6 @@ class Variant(db.Model):
             "edit_url": url_for('variants.edit_variant', variant_id=self.id),
             "delete_url": url_for('variants_api.delete_variant', variant_id=self.id),
         }
+
+    def __repr__(self) -> str:
+        return f'Variant(id={self.id}, author={self.author})'

@@ -73,6 +73,10 @@ class User(UserMixin, db.Model):
         passive_deletes=True
     )
 
+    @classmethod
+    def view_name(cls) -> str:
+        return "Пользователи"
+
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
 
@@ -120,3 +124,63 @@ class User(UserMixin, db.Model):
             'registered_at': self.registered_at.strftime("%d.%m.%Y"),
             'avatar': url_for('profile.get_avatar', user_id=self.id),
         }
+
+    def __repr__(self) -> str:
+        return f'User(id={self.id}, username={self.username})'
+
+
+def ensure_default_admin_account(app=None) -> None:
+    from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
+
+    ctx_entered = False
+    if app is not None:
+        ctx = app.app_context()
+        ctx.push()
+        ctx_entered = True
+
+    try:
+        # Проверяем, есть ли уже администратор
+        admin_user = User.query.filter_by(username='admin').first()
+
+        if admin_user:
+            # Администратор уже существует
+            if not admin_user.is_admin:
+                # Если существует но не админ - добавляем роль админа
+                from app.models.roles import Role
+                admin_role = Role.query.filter_by(name='admin').first()
+                if admin_role and admin_role not in admin_user.roles:
+                    admin_user.roles.append(admin_role)
+                    db.session.commit()
+        else:
+            # Создаём нового администратора
+            from app.models.roles import Role
+
+            admin_user = User(
+                username='admin',
+                first_name='Админ',
+                last_name='Админов',
+                middle_name='Админович',
+            )
+            admin_user.set_password('admin')
+
+            # Добавляем роль админа
+            admin_role = Role.query.filter_by(name='admin').first()
+            if admin_role:
+                admin_user.roles.append(admin_role)
+
+            db.session.add(admin_user)
+            db.session.commit()
+
+    except (OperationalError, ProgrammingError):
+        # Таблицы могут ещё не существовать (до миграций)
+        db.session.rollback()
+    except IntegrityError:
+        # Может быть race condition если несколько процессов создают одновременно
+        db.session.rollback()
+    except Exception:
+        # На всякий случай откатим и пробросим ошибку дальше
+        db.session.rollback()
+        raise
+    finally:
+        if ctx_entered:
+            ctx.pop()

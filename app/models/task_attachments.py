@@ -3,10 +3,11 @@ from typing import Dict
 from flask import url_for
 
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 
 
-class TaskAttachment(db.Model):
+class TaskAttachment(IModel):
     __tablename__ = 'task_attachments'
 
     id = db.Column(
@@ -31,6 +32,10 @@ class TaskAttachment(db.Model):
         back_populates='attachments',
         passive_deletes=True,
     )
+
+    @classmethod
+    def view_name(cls) -> str:
+        return "Вложения в задаче"
 
     @property
     def as_dict(self) -> Dict:

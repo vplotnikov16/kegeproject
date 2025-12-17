@@ -98,3 +98,7 @@ class Task(db.Model):
             "delete_url": url_for('tasks.delete_task', task_id=self.id),
             'attachments': [a.as_dict for a in self.attachments],
         }
+
+    @classmethod
+    def view_name(cls) -> str:
+        return "Задачи"

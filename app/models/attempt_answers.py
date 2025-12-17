@@ -1,8 +1,9 @@
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 
 
-class AttemptAnswer(db.Model):
+class AttemptAnswer(IModel):
     __tablename__ = 'attempt_answers'
 
     id = db.Column(
@@ -50,3 +51,10 @@ class AttemptAnswer(db.Model):
         db.UniqueConstraint('attempt_id', 'variant_task_id', name='uq_attempt_variant_task'),
         db.Index('ix_attempt_answers_attempt', 'attempt_id'),
     )
+
+    @classmethod
+    def view_name(cls) -> str:
+        return "Ответы в попытке"
+
+    def __repr__(self) -> str:
+        return f'AttemptAnswer(attempt={self.attempt_id}, variant_task={self.variant_task})'

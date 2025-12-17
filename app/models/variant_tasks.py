@@ -49,3 +49,7 @@ class VariantTask(db.Model):
         db.UniqueConstraint('variant_id', 'task_id', name='uq_variant_task'),
         db.Index('ix_variant_tasks_order', 'variant_id', 'order'),
     )
+
+    @classmethod
+    def view_name(cls) -> str:
+        return 'Задачи в варианте'

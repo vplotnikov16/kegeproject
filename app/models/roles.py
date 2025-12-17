@@ -1,9 +1,10 @@
 from typing import Iterable, Tuple
 
 from app.extensions import db
+from app.models.model_abc import IModel
 
 
-class Role(db.Model):
+class Role(IModel):
     __tablename__ = 'roles'
 
     id = db.Column(
@@ -18,6 +19,13 @@ class Role(db.Model):
 
     # при удалении роли строки в user_roles удалятся сами из-за FK ondelete, пользователи при этом сохранятся
     users = db.relationship('User', secondary='user_roles', back_populates='roles', passive_deletes=True)
+
+    @classmethod
+    def view_name(cls) -> str:
+        return "Роли"
+
+    def __repr__(self) -> str:
+        return f"Role(id={self.id}, name={self.name})"
 
 
 def _default_roles() -> Iterable[Tuple[int, str]]:
