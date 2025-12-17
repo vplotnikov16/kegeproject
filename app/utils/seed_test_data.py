@@ -203,7 +203,7 @@ def attach_files_to_some_tasks(db, tasks):
     print(f"Created {count} task attachments.")
 
 
-def create_variants_and_links(db, tasks, users):
+def create_variants_and_links(db, tasks, users, fake):
     from app.models import Variant, VariantTask
 
     print("Creating variants and linking 27 slots per variant (slot 20 and 21 merged into 19)...")
@@ -266,7 +266,7 @@ def create_variants_and_links(db, tasks, users):
     print(f"Created {len(variants)} variants and {variant_tasks_total} variant_task links.")
     return variants
 
-def create_attempts_and_answers(db, users, variants):
+def create_attempts_and_answers(db, users, variants, fake):
     from app.models import Attempt, AttemptAnswer, VariantTask
     print("Creating attempts and answers with distributed dates...")
 
@@ -384,9 +384,9 @@ def create_test_data(db):
     users = create_users(db, fake)
     tasks = create_tasks(db, fake)
     attach_files_to_some_tasks(db, tasks)
-    variants = create_variants_and_links(db, tasks, users)
+    variants = create_variants_and_links(db, tasks, users, fake)
     create_user_roles_for_demo(db, users)
-    create_attempts_and_answers(db, users, variants)
+    create_attempts_and_answers(db, users, variants, fake)
 
     print("\n" + "=" * 50)
     print("SEED COMPLETE")
