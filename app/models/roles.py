@@ -25,7 +25,7 @@ class Role(IModel):
         return "Роли"
 
     def __repr__(self) -> str:
-        return f"Role(id={self.id}, name={self.name})"
+        return f"Role(id={self.id} name={self.name})"
 
 
 def _default_roles() -> Iterable[Tuple[int, str]]:

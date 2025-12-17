@@ -11,7 +11,7 @@ from .models import User, Task, Variant, Attempt, AttemptAnswer
 
 def _register_entities_views(admin):
     from app.admin import get_model_view
-    for model in models.models:
+    for model in models.models:  # pylint: disable=E0602
         view = get_model_view(model)
         admin.add_view(view(model, db.session, name=model.view_name()))
 

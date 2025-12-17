@@ -15,6 +15,9 @@ class UserRole(db.Model):
         primary_key=True,
     )
 
+    user = db.relationship('User', foreign_keys=[user_id], lazy='joined', overlaps='roles,users')
+    role = db.relationship('Role', foreign_keys=[role_id], lazy='joined', overlaps='roles,users')
+
     @classmethod
     def view_name(cls):
         return "Роли пользователей"

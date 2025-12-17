@@ -46,6 +46,10 @@
                             <li><a class="dropdown-item" href="{{ url_for('profile.stats') }}"><i class="fas fa-cog fa-fw"></i>Статистика</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('profile.my_tasks') }}"><i class="fas fa-cog fa-fw"></i>Мои задачи</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('profile.my_variants') }}"><i class="fas fa-cog fa-fw"></i>Мои варианты</a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin"><i class="fas fa-cog fa-fw"></i>Тайная комната</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('pages.logout') }}"><i class="fas fa-sign-out-alt fa-fw"></i>Выйти</a></li>
                         </ul>
