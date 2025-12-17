@@ -1,4 +1,4 @@
-from app.models import *
+from app import models
 from .base_view import SecureModelView
 from .users_view import UserAdmin
 from .tasks_view import TaskAdmin
@@ -6,9 +6,9 @@ from .variant_view import VariantAdmin
 from app.extensions import db
 
 mapping = {
-    User: UserAdmin,
-    Task: TaskAdmin,
-    Variant: VariantAdmin,
+    models.User: UserAdmin,
+    models.Task: TaskAdmin,
+    models.Variant: VariantAdmin,
 }
 
 
