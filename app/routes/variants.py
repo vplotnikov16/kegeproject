@@ -104,8 +104,9 @@ def edit_variant(variant_id):
 def add_task(variant_id):
     variant = Variant.query.get_or_404(variant_id)
 
-    can_edit = current_user.is_authenticated
-    can_edit &= current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
+    can_edit = False
+    if current_user.is_authenticated:
+        can_edit = current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
 
     if not can_edit:
         return jsonify(ok=False, message="Нет прав"), 403
@@ -144,8 +145,9 @@ def add_task(variant_id):
 def remove_task(variant_id):
     variant = Variant.query.get_or_404(variant_id)
 
-    can_edit = current_user.is_authenticated
-    can_edit &= current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
+    can_edit = False
+    if current_user.is_authenticated:
+        can_edit = current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
 
     if not can_edit:
         return jsonify(ok=False, message="Нет прав"), 403
@@ -172,8 +174,9 @@ def remove_task(variant_id):
 def move_task(variant_id):
     variant = Variant.query.get_or_404(variant_id)
 
-    can_edit = current_user.is_authenticated
-    can_edit &= current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
+    can_edit = False
+    if current_user.is_authenticated:
+        can_edit = current_user.is_admin or variant.author is not None and current_user.id == variant.author.id
 
     if not can_edit:
         return jsonify(ok=False, message="Нет прав"), 403

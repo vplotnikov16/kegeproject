@@ -51,8 +51,9 @@ class Variant(db.Model):
         from flask_login import current_user
         from flask import url_for
 
-        can_edit = current_user.is_authenticated
-        can_edit &= current_user.is_admin or current_user.id == self.author_id
+        can_edit = False
+        if current_user.is_authenticated:
+            can_edit = current_user.is_admin or current_user.id == self.author_id
 
         return {
             "id": self.id,

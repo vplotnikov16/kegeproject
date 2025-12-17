@@ -66,8 +66,9 @@ def view_task(task_id):
     if task is None:
         abort(404)
 
-    can_edit = current_user.is_authenticated
-    can_edit &= current_user.is_admin or task.author is not None and current_user.id == task.author.id
+    can_edit = False
+    if current_user.is_authenticated:
+        can_edit = current_user.is_admin or task.author is not None and current_user.id == task.author.id
 
     # Форма удаления (только если пользователь имеет право)
     delete_form = ConfirmForm() if can_edit else None
@@ -87,8 +88,9 @@ def delete_task(task_id):
     if task is None:
         abort(404)
 
-    can_delete = current_user.is_authenticated
-    can_delete &= current_user.is_admin or task.author is not None and current_user.id == task.author.id
+    can_delete = False
+    if current_user.is_authenticated:
+        can_delete = current_user.is_admin or task.author is not None and current_user.id == task.author.id
 
     if not can_delete:
         abort(403)
@@ -110,8 +112,9 @@ def delete_task(task_id):
 def edit_task(task_id):
     task = Task.query.get_or_404(task_id)
 
-    can_edit = current_user.is_authenticated
-    can_edit &= current_user.is_admin or task.author is not None and current_user.id == task.author.id
+    can_edit = False
+    if current_user.is_authenticated:
+        can_edit = current_user.is_admin or task.author is not None and current_user.id == task.author.id
 
     if not can_edit:
         abort(403)
