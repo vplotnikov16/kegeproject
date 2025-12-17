@@ -73,12 +73,12 @@ def create_roles(db):
     print("Roles ready.")
 
 
-def create_users(db, fake):
+def create_users(db, fake):  # pyling disable=R0914
     from app.models import User, UserAvatar, Role, UserRole
 
     print(f"Creating {NUM_USERS} users...")
     users = []
-    for i in range(NUM_USERS):
+    for _ in range(NUM_USERS):
         first_name = fake.first_name()
         last_name = fake.last_name()
         middle_name = fake.middle_name() if random.random() < MIDDLE_NAME_PROBABILITY else None
@@ -298,7 +298,6 @@ def create_attempts_and_answers(db, users, variants):
             finished_at = None
             if not finished_is_none:
                 # variant.duration хранится в секундах (обязательное поле)
-                # берём случайное время выполнения от 1 секунды до variant.duration (или до variant.duration * 1.1 чтобы дать вероятность завершения поздно)
                 dur = getattr(v, "duration", None) or 0
                 if dur <= 0:
                     # защита на случай некорректного duration — ставим небольшой временной отрезок
@@ -377,7 +376,6 @@ def create_user_roles_for_demo(db, users):
 
 
 def create_test_data(db):
-    global fake
     fake = Faker('ru_RU')
 
     # create roles first
