@@ -23,7 +23,7 @@ class Task(db.Model):
         nullable=False,
     )
     answer = db.Column(
-        db.String,
+        db.String(255),
         nullable=False,
     )
     published_at = db.Column(
