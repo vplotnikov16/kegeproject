@@ -43,5 +43,9 @@
             {{ form.submit(class="btn btn-primary", type="submit", method="post") }}
         </div>
     </form>
+
+    <div class="auth-footer">
+        <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a></p>
+    </div>
 </div>
 {% endblock %}

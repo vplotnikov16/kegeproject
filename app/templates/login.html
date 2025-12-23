@@ -32,5 +32,9 @@
             {{ form.submit(class="btn btn-primary", type="submit") }}
         </div>
     </form>
+
+    <div class="auth-footer">
+        <p>Еще нет аккаунта? <a href="{{ url_for('pages.register') }}">Зарегистрироваться</a></p>
+    </div>
 </div>
 {% endblock %}
