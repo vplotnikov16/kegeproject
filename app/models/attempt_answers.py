@@ -25,7 +25,7 @@ class AttemptAnswer(IModel):
     )
 
     answer_text = db.Column(
-        db.String(255),
+        db.Text,
         nullable=True,
     )
     is_correct = db.Column(

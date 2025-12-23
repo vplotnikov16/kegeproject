@@ -1,16 +1,16 @@
-"""снова начальная миграция
+"""empty message
 
-Revision ID: 43571b8bbd4f
+Revision ID: dd2faa060877
 Revises: 
-Create Date: 2025-12-14 17:50:56.654466
+Create Date: 2025-12-24 00:47:26.487102
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision = '43571b8bbd4f'
+revision = 'dd2faa060877'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -39,7 +39,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('number', sa.Integer(), nullable=False),
     sa.Column('statement_html', sa.Text(), nullable=False),
-    sa.Column('answer', sa.String(), nullable=False),
+    sa.Column('answer', sa.Text(), nullable=False),
     sa.Column('published_at', sa.DateTime(), nullable=True),
     sa.Column('source', sa.String(length=255), nullable=True),
     sa.Column('author_id', sa.Integer(), nullable=True),
@@ -55,7 +55,7 @@ def upgrade():
     sa.Column('filename', sa.String(length=255), nullable=True),
     sa.Column('content_type', sa.String(length=120), nullable=True),
     sa.Column('size', sa.Integer(), nullable=True),
-    sa.Column('data', sa.LargeBinary(), nullable=False),
+    sa.Column('data', sa.LargeBinary().with_variant(mysql.MEDIUMBLOB(), 'mysql'), nullable=False),
     sa.Column('uploaded_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_user_avatars_user_id_users'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_user_avatars'))
@@ -98,7 +98,7 @@ def upgrade():
     sa.Column('filename', sa.String(length=32), nullable=False),
     sa.Column('content_type', sa.String(length=120), nullable=True),
     sa.Column('size', sa.Integer(), nullable=True),
-    sa.Column('data', sa.LargeBinary(), nullable=False),
+    sa.Column('data', sa.LargeBinary().with_variant(mysql.MEDIUMBLOB(), 'mysql'), nullable=False),
     sa.Column('uploaded_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['task_id'], ['tasks.id'], name=op.f('fk_task_attachments_task_id_tasks'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_task_attachments'))
@@ -122,7 +122,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('attempt_id', sa.Integer(), nullable=False),
     sa.Column('variant_task_id', sa.Integer(), nullable=False),
-    sa.Column('answer_text', sa.String(), nullable=True),
+    sa.Column('answer_text', sa.Text(), nullable=True),
     sa.Column('is_correct', sa.Boolean(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['attempt_id'], ['attempts.id'], name=op.f('fk_attempt_answers_attempt_id_attempts'), ondelete='CASCADE'),

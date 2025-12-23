@@ -1,10 +1,11 @@
 from typing import Dict
 
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 
 
-class Variant(db.Model):
+class Variant(IModel):
     __tablename__ = 'variants'
 
     id = db.Column(

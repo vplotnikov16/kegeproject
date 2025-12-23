@@ -4,11 +4,12 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 from app.utils.name_utils import get_username
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, IModel):
     __tablename__ = 'users'
 
     id = db.Column(

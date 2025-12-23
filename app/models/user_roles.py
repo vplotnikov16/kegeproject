@@ -1,7 +1,8 @@
 from app.extensions import db
+from app.models.model_abc import IModel
 
 
-class UserRole(db.Model):
+class UserRole(IModel):
     __tablename__ = 'user_roles'
 
     user_id = db.Column(

@@ -1,7 +1,8 @@
 from app.extensions import db
+from app.models.model_abc import IModel
 
 
-class VariantTask(db.Model):
+class VariantTask(IModel):
     __tablename__ = 'variant_tasks'
 
     id = db.Column(

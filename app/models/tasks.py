@@ -3,11 +3,12 @@ from typing import Dict
 from flask_login import current_user
 
 from app.extensions import db
+from app.models.model_abc import IModel
 from app.utils.date_utils import utcnow
 from app.utils.text_utils import make_snippet
 
 
-class Task(db.Model):
+class Task(IModel):
     __tablename__ = 'tasks'
 
     id = db.Column(
@@ -23,7 +24,7 @@ class Task(db.Model):
         nullable=False,
     )
     answer = db.Column(
-        db.String(255),
+        db.Text,
         nullable=False,
     )
     published_at = db.Column(
