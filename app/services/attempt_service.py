@@ -93,15 +93,36 @@ class AttemptService:
         answers_map = {aa.variant_task_id: aa for aa in attempt.answers}
 
         results = []
+        total_display_tasks = 0
+
         for vt in variant_tasks:
             task = vt.task
             answer = answers_map.get(vt.id)
-            results.append({
-                'task_number': task.number,
-                'correct_answer': task.answer,
-                'user_answer': answer.answer_text if answer else None,
-                'task_id': task.id,
-            })
+            user_answer = answer.answer_text if answer else None
+
+            if task.number == 19:
+                # Задача 19 отображается как 3 задачи (19, 20, 21)
+                # Каждая ячейка таблицы = отдельная задача
+                total_display_tasks += 3
+
+                results.append({
+                    'task_number': 19,
+                    'correct_answer': task.answer,
+                    'user_answer': user_answer,
+                    'task_id': task.id,
+                    'is_task_19_group': True,  # Флаг для фронтенда
+                })
+            else:
+                # Обычная задача
+                total_display_tasks += 1
+
+                results.append({
+                    'task_number': task.number,
+                    'correct_answer': task.answer,
+                    'user_answer': user_answer,
+                    'task_id': task.id,
+                    'is_task_19_group': False,
+                })
 
         return {
             'attempt_id': attempt.id,
@@ -109,5 +130,5 @@ class AttemptService:
             'started_at': attempt.started_at.isoformat(),
             'finished_at': attempt.finished_at.isoformat(),
             'results': results,
-            'total_tasks': len(results),
+            'total_tasks': total_display_tasks,
         }

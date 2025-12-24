@@ -54,7 +54,7 @@
 
     function renderResults(data) {
         const container = document.getElementById('resultsTableContainer');
-        
+
         // Calculate duration
         const start = new Date(attemptData.startedAt);
         const end = new Date(attemptData.finishedAt);
@@ -62,7 +62,7 @@
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-        document.getElementById('attemptDuration').textContent = 
+        document.getElementById('attemptDuration').textContent =
             `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
         // Build results table
@@ -79,20 +79,63 @@
                 <tbody>
         `;
 
-        data.results.forEach((result, index) => {
-            const isCorrect = normalizeAnswer(result.correct_answer) === normalizeAnswer(result.user_answer);
-            const status = result.user_answer ? 
-                (isCorrect ? '<span class="badge badge-success">Верно</span>' : '<span class="badge badge-danger">Ошибка</span>') :
-                '<span class="badge badge-secondary">Не отвечено</span>';
+        let correctCount = 0;
+        let totalCount = 0;
 
-            html += `
-                <tr class="${isCorrect && result.user_answer ? 'correct' : (!result.user_answer ? 'unanswered' : 'incorrect')}">
-                    <td class="col-kim"><strong>№ ${result.task_number}</strong></td>
-                    <td class="col-correct"><code>${escapeHtml(result.correct_answer || '—')}</code></td>
-                    <td class="col-user"><code>${escapeHtml(result.user_answer || '—')}</code></td>
-                    <td class="col-status">${status}</td>
-                </tr>
-            `;
+        data.results.forEach((result) => {
+            if (result.is_task_19_group) {
+                // Задача 19 (19-21) - особая обработка
+                const correctAnswers = parseTask19Answer(result.correct_answer);
+                const userAnswers = parseTask19Answer(result.user_answer);
+
+                // Отображаем как 3 отдельные строки (19, 20, 21)
+                for (let i = 0; i < 3; i++) {
+                    const taskNum = 19 + i;
+                    const correct = correctAnswers[i] || '—';
+                    const user = userAnswers[i] || '—';
+                    const isCorrect = normalizeAnswer(correct) === normalizeAnswer(user);
+
+                    if (user !== '—') {
+                        totalCount++;
+                        if (isCorrect) correctCount++;
+                    }
+
+                    const status = user !== '—' ?
+                        (isCorrect ? '<span class="badge badge-success">Верно</span>' : '<span class="badge badge-danger">Ошибка</span>') :
+                        '<span class="badge badge-secondary">Не отвечено</span>';
+
+                    html += `
+                        <tr class="${isCorrect && user !== '—' ? 'correct' : (user === '—' ? 'unanswered' : 'incorrect')}">
+                            <td class="col-kim"><strong>№ ${taskNum}</strong></td>
+                            <td class="col-correct"><code>${escapeHtml(correct)}</code></td>
+                            <td class="col-user"><code>${escapeHtml(user)}</code></td>
+                            <td class="col-status">${status}</td>
+                        </tr>
+                    `;
+                }
+            } else {
+                // Обычная задача
+                const isCorrect = normalizeAnswer(result.correct_answer) === normalizeAnswer(result.user_answer);
+                const hasAnswer = result.user_answer && result.user_answer.trim();
+
+                if (hasAnswer) {
+                    totalCount++;
+                    if (isCorrect) correctCount++;
+                }
+
+                const status = hasAnswer ?
+                    (isCorrect ? '<span class="badge badge-success">Верно</span>' : '<span class="badge badge-danger">Ошибка</span>') :
+                    '<span class="badge badge-secondary">Не отвечено</span>';
+
+                html += `
+                    <tr class="${isCorrect && hasAnswer ? 'correct' : (!hasAnswer ? 'unanswered' : 'incorrect')}">
+                        <td class="col-kim"><strong>№ ${result.task_number}</strong></td>
+                        <td class="col-correct"><code>${escapeHtml(result.correct_answer || '—')}</code></td>
+                        <td class="col-user"><code>${escapeHtml(result.user_answer || '—')}</code></td>
+                        <td class="col-status">${status}</td>
+                    </tr>
+                `;
+            }
         });
 
         html += `
@@ -101,11 +144,10 @@
         `;
 
         // Add summary
-        const correct = data.results.filter(r => normalizeAnswer(r.correct_answer) === normalizeAnswer(r.user_answer) && r.user_answer).length;
         html = `
             <div class="results-summary">
                 <div class="summary-card correct">
-                    <div class="summary-number">${correct}</div>
+                    <div class="summary-number">${correctCount}</div>
                     <div class="summary-label">Верных ответов</div>
                 </div>
                 <div class="summary-card total">
@@ -113,13 +155,34 @@
                     <div class="summary-label">Всего заданий</div>
                 </div>
                 <div class="summary-card percentage">
-                    <div class="summary-number">${Math.round((correct / data.total_tasks) * 100)}%</div>
+                    <div class="summary-number">${data.total_tasks > 0 ? Math.round((correctCount / data.total_tasks) * 100) : 0}%</div>
                     <div class="summary-label">Процент верных</div>
                 </div>
             </div>
         ` + html;
 
         container.innerHTML = html;
+    }
+
+    function parseTask19Answer(answerText) {
+        /**
+         * Парсит ответ на задачу 19 (таблица 1x3)
+         * Формат JSON: {"0_0": "A", "0_1": "B", "0_2": "C"}
+         * Возвращает массив [A, B, C]
+         */
+        if (!answerText) return ['', '', ''];
+
+        try {
+            const answers = JSON.parse(answerText);
+            return [
+                answers['0_0'] || '',
+                answers['0_1'] || '',
+                answers['0_2'] || ''
+            ];
+        } catch (e) {
+            // Если не JSON, возвращаем как есть для первой ячейки
+            return [answerText, '', ''];
+        }
     }
 
     function normalizeAnswer(answer) {

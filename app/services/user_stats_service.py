@@ -1,5 +1,5 @@
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sqlalchemy import and_
 
 from app.models import Attempt, Variant, VariantTask
@@ -19,6 +19,7 @@ class UserStatsService:
         attempts = (
             Attempt.query
             .filter_by(user_id=user_id)
+            .filter(Attempt.finished_at.isnot(None))
             .order_by(Attempt.finished_at.desc())
             .limit(limit)
             .all()
@@ -26,12 +27,42 @@ class UserStatsService:
 
         result = []
         for attempt in attempts:
-            if not attempt.finished_at:
-                continue
+            variant_tasks = VariantTask.query.filter_by(variant_id=attempt.variant_id).all()
 
-            correct_count = sum(1 for ans in attempt.answers if ans.is_correct is True)
-            total_count = len(attempt.answers)
-            score = (correct_count / total_count * 100) if total_count > 0 else 0
+            # Подсчёт реального количества задач для отображения
+            total_display_tasks = 0
+            correct_count = 0
+
+            for vt in variant_tasks:
+                answer = next((a for a in attempt.answers if a.variant_task_id == vt.id), None)
+
+                if vt.task.number == 19:
+                    # Задача 19 = 3 подзадачи
+                    total_display_tasks += 3
+
+                    if answer and answer.answer_text:
+                        # Парсим таблицу и считаем правильные ответы
+                        try:
+                            import json
+                            user_answers = json.loads(answer.answer_text)
+                            correct_answers = json.loads(vt.task.answer) if vt.task.answer else {}
+
+                            for key in ['0_0', '0_1', '0_2']:
+                                user_val = user_answers.get(key, '').strip().lower()
+                                correct_val = correct_answers.get(key, '').strip().lower()
+
+                                if user_val and user_val == correct_val:
+                                    correct_count += 1
+                        except (json.JSONDecodeError, AttributeError):
+                            pass
+                else:
+                    # Обычная задача
+                    total_display_tasks += 1
+
+                    if answer and answer.is_correct:
+                        correct_count += 1
+
+            score = (correct_count / total_display_tasks * 100) if total_display_tasks > 0 else 0
 
             result.append({
                 'id': attempt.id,
@@ -40,7 +71,7 @@ class UserStatsService:
                 'finished_at': attempt.finished_at.strftime('%d.%m.%Y %H:%M'),
                 'duration': attempt.variant.duration,
                 'correct_answers': correct_count,
-                'total_answers': total_count,
+                'total_answers': total_display_tasks,
                 'score': round(score, 2),
                 'is_full_variant': UserStatsService._is_full_variant(attempt.variant),
             })
@@ -49,20 +80,34 @@ class UserStatsService:
 
     @staticmethod
     def _is_full_variant(variant: Variant) -> bool:
-        """
-        Проверить, является ли вариант полным ЕГЭ вариантом
-        В БД хранится 25 задач (19-21 как одна), но отображаются 27 номеров (1-27)
-        """
-        tasks = VariantTask.query.filter_by(variant_id=variant.id).order_by(VariantTask.order).all()
+        tasks = VariantTask.query.filter_by(variant_id=variant.id).all()
 
-        # Получить номера всех задач из БД
-        task_numbers = sorted(set(t.task.number for t in tasks))
+        # Подсчитываем количество каждого номера КИМ
+        number_counts = {}
+        for vt in tasks:
+            num = vt.task.number
+            number_counts[num] = number_counts.get(num, 0) + 1
 
-        # Полный вариант должен содержать номера: 1-18, 19 (за 19-21), 22-27
-        # Это 25 уникальных номеров в БД, но 27 отображаемых задач
-        expected_numbers = list(range(1, 19)) + [19] + list(range(22, 28))
+        # Ожидаемая структура полного варианта:
+        # Номера 1-18: по 1 разу
+        for num in range(1, 19):
+            if number_counts.get(num, 0) != 1:
+                return False
 
-        return task_numbers == expected_numbers
+        # Номер 19: ровно 1 раз (это задачи 19-21)
+        if number_counts.get(19, 0) != 1:
+            return False
+
+        # Номера 22-27: по 1 разу
+        for num in range(22, 28):
+            if number_counts.get(num, 0) != 1:
+                return False
+
+        # Проверка, что нет лишних номеров
+        expected_numbers = set(range(1, 19)) | {19} | set(range(22, 28))
+        actual_numbers = set(number_counts.keys())
+
+        return actual_numbers == expected_numbers and len(tasks) == 25
 
     @staticmethod
     def convert_to_secondary_score(primary_score: int) -> int:
@@ -282,3 +327,39 @@ class UserStatsService:
             'best_score': round(best_score, 2),
             'full_variants_count': full_count,
         }
+
+    @staticmethod
+    def count_display_tasks(variant_tasks: List[VariantTask]) -> int:
+        count = 0
+        for vt in variant_tasks:
+            if vt.task.number == 19:
+                count += 3  # Задачи 19-21 считаются как 3
+            else:
+                count += 1
+        return count
+
+    @staticmethod
+    def count_answered_tasks_for_task19(answer_text: str) -> int:
+        if not answer_text:
+            return 0
+
+        try:
+            import json
+            answers = json.loads(answer_text)
+            # Подсчитываем непустые ячейки
+            return sum(1 for v in answers.values() if v and str(v).strip())
+        except (json.JSONDecodeError, AttributeError):
+            # Если не JSON или ошибка парсинга
+            return 1 if answer_text.strip() else 0
+
+    @staticmethod
+    def is_table_answer_filled(answer_text: str) -> bool:
+        if not answer_text:
+            return False
+
+        try:
+            import json
+            answers = json.loads(answer_text)
+            return any(v and str(v).strip() for v in answers.values())
+        except (json.JSONDecodeError, AttributeError):
+            return bool(answer_text.strip())
