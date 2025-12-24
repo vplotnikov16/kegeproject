@@ -77,12 +77,38 @@ function createTaskSlideHTML(task) {
 
     table += '</tbody></table>';
 
+    // Рендеринг вложений (если есть)
+    let attachmentsHTML = '';
+    if (task.attachments && task.attachments.length > 0) {
+        attachmentsHTML = '<div class="task-attachments">';
+        attachmentsHTML += '<div class="attachments-title">Вложения:</div>';
+        attachmentsHTML += '<div class="attachments-list">';
+
+        task.attachments.forEach(attachment => {
+            const sizeKB = attachment.size ? Math.round(attachment.size / 1024) : 0;
+
+            attachmentsHTML += `
+                <a href="${attachment.download_url}"
+                   class="attachment-item"
+                   download="${attachment.filename}"
+                   target="_blank">
+                    <div class="attachment-info">
+                        <div class="attachment-name">${attachment.filename} (${sizeKB} КБ)</div>
+                    </div>
+                </a>
+            `;
+        });
+
+        attachmentsHTML += '</div></div>';
+    }
+
     return `
         <div class="task-slide">
             <div class="task-header">
                 <div class="task-number">Задача №${task.number}</div>
             </div>
             <div class="task-statement">${task.statement_html}</div>
+            ${attachmentsHTML}
             <div class="task-answer-section">
                 ${table}
                 <button class="save-answer-btn"
