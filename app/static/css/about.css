@@ -1,5 +1,5 @@
 /* ============================================
-   ABOUT PAGE - ADVANCED ANIMATIONS WITH AOS
+   ABOUT PAGE - WORKING AOS ANIMATIONS
    ============================================ */
 
 :root {
@@ -37,6 +37,50 @@ body, html {
 }
 
 /* ============================================
+   AOS ANIMATIONS - CRITICAL BASE SETUP
+   ============================================ */
+
+[data-aos] {
+    opacity: 0;
+    transition-property: opacity, transform;
+    transition-duration: 600ms;
+    transition-timing-function: cubic-bezier(0.26, 0.46, 0.52, 0.96);
+}
+
+[data-aos="fade-up"] {
+    transform: translate3d(0, 40px, 0);
+}
+
+[data-aos="fade-down"] {
+    transform: translate3d(0, -40px, 0);
+}
+
+[data-aos="fade-left"] {
+    transform: translate3d(40px, 0, 0);
+}
+
+[data-aos="fade-right"] {
+    transform: translate3d(-40px, 0, 0);
+}
+
+[data-aos="fade-up-right"] {
+    transform: translate3d(-40px, 40px, 0);
+}
+
+[data-aos="zoom-in"] {
+    transform: translate3d(0, 0, 0) scale3d(0.8, 0.8, 0.8);
+}
+
+[data-aos="flip-left"] {
+    transform: perspective(2500px) rotateY(100deg);
+}
+
+[data-aos].aos-animate {
+    opacity: 1 !important;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) !important;
+}
+
+/* ============================================
    HERO SECTION - ANIMATED BACKGROUND
    ============================================ */
 
@@ -63,7 +107,6 @@ body, html {
     overflow: hidden;
 }
 
-/* Animated blobs */
 .blob {
     position: absolute;
     border-radius: 50%;
@@ -195,7 +238,6 @@ body, html {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* Scroll indicator animation */
 .scroll-indicator {
     position: absolute;
     bottom: 30px;
@@ -232,21 +274,10 @@ body, html {
 }
 
 @media (max-width: 768px) {
-    .section-hero {
-        padding: 1rem;
-    }
-    
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.1rem;
-    }
-    
-    .hero-cta {
-        flex-direction: column;
-    }
+    .section-hero { padding: 1rem; }
+    .hero-title { font-size: 2.5rem; }
+    .hero-subtitle { font-size: 1.1rem; }
+    .hero-cta { flex-direction: column; }
 }
 
 /* ============================================
@@ -269,22 +300,10 @@ body, html {
     overflow: hidden;
 }
 
-.section-university {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 0.5%, #f5f7fa 100%);
-}
-
-.section-developers {
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-}
-
-.section-supervisor {
-    background: linear-gradient(135deg, #f5f7fa 0%, #ede7f6 100%);
-}
-
-.section-features {
-    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
-}
-
+.section-university { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 0.5%, #f5f7fa 100%); }
+.section-developers { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); }
+.section-supervisor { background: linear-gradient(135deg, #f5f7fa 0%, #ede7f6 100%); }
+.section-features { background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%); }
 .section-closing {
     background: var(--gradient-primary);
     color: var(--color-white);
@@ -295,10 +314,6 @@ body, html {
     text-align: center;
     padding: 8rem 2rem;
 }
-
-/* ============================================
-   SECTION INTRO (LEFT/RIGHT ANIMATIONS)
-   ============================================ */
 
 .section-intro {
     display: flex;
@@ -336,7 +351,7 @@ body, html {
 }
 
 /* ============================================
-   UNIVERSITY CARDS - FLIP ANIMATION
+   UNIVERSITY CARDS
    ============================================ */
 
 .uni-grid {
@@ -375,9 +390,7 @@ body, html {
     box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
 }
 
-.uni-card:hover .card-bg {
-    opacity: 1;
-}
+.uni-card:hover .card-bg { opacity: 1; }
 
 .card-icon {
     font-size: 3rem;
@@ -413,12 +426,10 @@ body, html {
 }
 
 /* ============================================
-   DEVELOPERS SECTION - ZOOM ANIMATIONS
+   DEVELOPERS SECTION
    ============================================ */
 
-.developers-showcase {
-    margin-top: 2rem;
-}
+.developers-showcase { margin-top: 2rem; }
 
 .developers-grid {
     display: grid;
@@ -440,9 +451,7 @@ body, html {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.developer-card:hover .card-wrapper {
-    transform: scale(1.08);
-}
+.developer-card:hover .card-wrapper { transform: scale(1.08); }
 
 .avatar-ring {
     position: relative;
@@ -480,18 +489,13 @@ body, html {
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
-.card-content {
-    position: relative;
-    z-index: 2;
-}
-
+.card-content { position: relative; z-index: 2; }
 .card-content h4 {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--color-dark);
     margin: 0.5rem 0;
 }
-
 .card-content p {
     color: var(--color-muted);
     font-size: 0.9rem;
@@ -503,9 +507,7 @@ body, html {
    SUPERVISOR SECTION
    ============================================ */
 
-.supervisor-wrapper {
-    margin-top: 2rem;
-}
+.supervisor-wrapper { margin-top: 2rem; }
 
 .supervisor-card {
     display: flex;
@@ -550,17 +552,13 @@ body, html {
     box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3);
 }
 
-.supervisor-content {
-    flex: 1;
-}
-
+.supervisor-content { flex: 1; }
 .supervisor-content h3 {
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--color-dark);
     margin: 0 0 0.5rem 0;
 }
-
 .supervisor-badge {
     display: inline-block;
     background: linear-gradient(135deg, #6f42c1 0%, #764ba2 100%);
@@ -571,7 +569,6 @@ body, html {
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
-
 .supervisor-role {
     color: var(--color-muted);
     font-size: 0.95rem;
@@ -586,7 +583,7 @@ body, html {
 }
 
 /* ============================================
-   FEATURES SECTION - OFFSET ANIMATIONS
+   FEATURES SECTION
    ============================================ */
 
 .features-container {
@@ -658,18 +655,13 @@ body, html {
    CLOSING SECTION
    ============================================ */
 
-.closing-content {
-    position: relative;
-    z-index: 10;
-}
-
+.closing-content { position: relative; z-index: 10; }
 .closing-content h2 {
     font-size: 3rem;
     font-weight: 800;
     margin-bottom: 1rem;
     text-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-
 .closing-content p {
     font-size: 1.2rem;
     margin-bottom: 2rem;
@@ -678,68 +670,18 @@ body, html {
 }
 
 /* ============================================
-   AOS CUSTOM ANIMATIONS
+   RESPONSIVE
    ============================================ */
 
-/* Custom zoom-in with rotation */
-[data-aos="zoom-in"] {
-    opacity: 0;
-    transform: scale(0.5) rotate(20deg);
-}
-
-[data-aos="zoom-in"].aos-animate {
-    opacity: 1;
-    transform: scale(1) rotate(0);
-}
-
-/* Flip animation */
-[data-aos="flip-left"] {
-    opacity: 0;
-    transform: rotateY(90deg) translateX(-100px);
-    transform-origin: center;
-}
-
-[data-aos="flip-left"].aos-animate {
-    opacity: 1;
-    transform: rotateY(0) translateX(0);
-}
-
-/* Fade with side movement */
-[data-aos="fade-up-right"] {
-    opacity: 0;
-    transform: translateX(-100px) translateY(100px) rotate(-20deg);
-}
-
-[data-aos="fade-up-right"].aos-animate {
-    opacity: 1;
-    transform: translateX(0) translateY(0) rotate(0);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
     .section-university,
     .section-developers,
     .section-supervisor,
     .section-features,
-    .section-closing {
-        padding: 4rem 1.5rem;
-    }
+    .section-closing { padding: 4rem 1.5rem; }
     
-    .section-intro h2 {
-        font-size: 1.8rem;
-    }
-    
-    .uni-grid,
-    .developers-grid,
-    .features-container {
-        gap: 1.5rem;
-    }
-    
-    .closing-content h2 {
-        font-size: 2rem;
-    }
-    
-    .closing-content p {
-        font-size: 1rem;
-    }
+    .section-intro h2 { font-size: 1.8rem; }
+    .uni-grid, .developers-grid, .features-container { gap: 1.5rem; }
+    .closing-content h2 { font-size: 2rem; }
+    .closing-content p { font-size: 1rem; }
 }
