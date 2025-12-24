@@ -1,399 +1,409 @@
-
 import random
 from datetime import timedelta
+from typing import Any, Dict, Iterable, List, Optional
+
 from faker import Faker
 
 from app.utils.date_utils import utcnow
 from run_in_venv import get_project_root
 
-
 NUM_USERS = 100
-NUM_TASKS_POOL = 400
+NUM_TASKS = 400
 NUM_VARIANTS = 150
-VARIANT_PROBABILITY = 0.7  # вероятность у пользователя быть потенциальным автором
+
+VARIANT_PROBABILITY = 0.7
 MIDDLE_NAME_PROBABILITY = 0.7
 SOURCE_PROBABILITY = 0.6
+SINGLE_ANSWER_PROB = 0.8
 
-SINGLE_ANSWER_PROB = 0.8  # вероятность, что для одиночного поля ответ - число, иначе слово
+ATTEMPTS_MAX_PER_VARIANT = 3
 
 
-def _make_answer_for_number(slot_num: int, fake: Faker):
+def _scalar_value(fake: Faker) -> str:
+    if random.random() < SINGLE_ANSWER_PROB:
+        return str(random.randint(1, 100))
+    return fake.word().upper()
 
-    def scalar():
-        if random.random() < SINGLE_ANSWER_PROB:
-            return str(random.randint(1, 100))
-        else:
-            return fake.word().upper()
 
-    def one_row_n_cells(n):
-        cells = [f"r1c{i+1}_{random.randint(1,999)}" for i in range(n)]
-        return ",".join(cells)
+def _vector_line(n: int, fake: Faker) -> str:
+    parts: List[str] = []
+    for _ in range(n):
+        parts.append(_scalar_value(fake) if random.random() < 0.5 else fake.word().upper())
+    return ";".join(parts)
 
+
+def _table_rows(rows: int, cols: int, fake: Faker) -> str:
+    out: List[str] = []
+    for _ in range(rows):
+        row: List[str] = []
+        for _ in range(cols):
+            row.append(_scalar_value(fake) if random.random() < 0.5 else fake.word().upper())
+        out.append(";".join(row))
+    return "\n".join(out)
+
+
+def make_answer_csv(slot_num: int, fake: Faker) -> str:
     if 1 <= slot_num <= 16 or 22 <= slot_num <= 24:
-        return scalar()
+        return _scalar_value(fake)
     if slot_num in (17, 18, 26):
-        return one_row_n_cells(2)
+        return _vector_line(2, fake)
     if slot_num == 19:
-        return one_row_n_cells(3)
+        return _vector_line(3, fake)
     if slot_num == 25:
-        rows = []
-        for r in range(10):
-            cells = [f"r{r+1}c1_{random.randint(1,999)}", f"r{r+1}c2_{random.randint(1,999)}"]
-            rows.append(",".join(cells))
-        return ";".join(rows)
+        return _table_rows(10, 2, fake)
     if slot_num == 27:
-        rows = []
-        for r in range(2):
-            cells = [f"r{r+1}c1_{random.randint(1,999)}", f"r{r+1}c2_{random.randint(1,999)}"]
-            rows.append(",".join(cells))
-        return ";".join(rows)
-
-    # default fallback
-    return scalar()
+        return _table_rows(2, 2, fake)
+    return _scalar_value(fake)
 
 
-def create_roles(db):
-    from app.models import Role
-    print("Ensuring default roles...")
-
-    try:
-        Role.ensure_default_roles()
-    except Exception:
-
-        from app.models.roles import ensure_default_roles as _ensure
-        try:
-            _ensure()
-        except Exception:
-            # last resort: создать объекты вручную
-            for role_id, role_name in [(0, 'admin'), (1, 'guest'), (2, 'user')]:
-                if Role.query.filter_by(name=role_name).first() is None:
-                    r = Role(id=role_id, name=role_name)
-                    db.session.add(r)
-            db.session.commit()
-    print("Roles ready.")
+# ---------- user creation ----------
+def _make_user_object(fake: Faker):
+    from app.models import User
+    first = fake.first_name()
+    last = fake.last_name()
+    middle = fake.middle_name() if random.random() < MIDDLE_NAME_PROBABILITY else None
+    username = User.generate_username(first, last, middle)
+    u = User(
+        username=username,
+        first_name=first,
+        last_name=last,
+        middle_name=middle,
+        registered_at=utcnow() - timedelta(days=random.randint(0, 365)),
+    )
+    u.set_password("P@ssw0rd")
+    return u
 
 
-def create_users(db, fake):  # pyling disable=R0914
-    from app.models import User, UserAvatar, Role, UserRole
+def create_users(db, count: int = NUM_USERS) -> List[int]:
+    from app.models import User
+    fake = Faker("ru_RU")
+    created_ids: List[int] = []
+    print(f"Создаю {count} новых пользователей...")
+    for _ in range(count):
+        u = _make_user_object(fake)
+        db.session.add(u)
+    # назначим id (flush) — в одной транзакции
+    db.session.flush()
+    # вернём список новых пользователей (последние count в таблице)
+    rows = db.session.query(User.id).order_by(User.id.desc()).limit(count).all()
+    for r in reversed(rows):
+        created_ids.append(r.id)
+    print(f"Добавлено {len(created_ids)} пользователей (id сгенерированы).")
+    return created_ids
 
-    print(f"Creating {NUM_USERS} users...")
-    users = []
-    for _ in range(NUM_USERS):
-        first_name = fake.first_name()
-        last_name = fake.last_name()
-        middle_name = fake.middle_name() if random.random() < MIDDLE_NAME_PROBABILITY else None
 
-        username = User.generate_username(first_name, last_name, middle_name)
-        user = User(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            middle_name=middle_name,
-            registered_at=utcnow() - timedelta(days=random.randint(0, 365))
-        )
-        user.set_password('P@ssw0rd')
-
-        db.session.add(user)
-        users.append(user)
-
-    db.session.commit()
-
-    # Назначим роли: 2-3 админа, остальные роли распределим
-    roles = {r.name: r for r in Role.query.all()}
-    admins = random.sample(users, max(1, NUM_USERS // 30))
-    for a in admins:
-        a.roles.append(roles.get('admin'))
-    for u in users:
-        if u not in admins:
-            u.roles.append(roles.get('user'))
-
-    db.session.commit()
-
-    # Создадим аватарки для 10% пользователей
-    avatar_count = 0
-    for u in random.sample(users, max(1, NUM_USERS // 10)):
+def add_avatars_for_users(db, user_ids: Iterable[int], proportion: float = 0.1) -> int:
+    from app.models import UserAvatar
+    user_list = list(user_ids)
+    sample_size = max(1, int(len(user_list) * proportion))
+    sample = random.sample(user_list, sample_size)
+    created = 0
+    for uid in sample:
+        # только для новых users — предполагаем, что пользователь не имеет аватарки
         av = UserAvatar(
-            user=u,
-            filename=f"{u.username}_avatar.png",
+            user_id=uid,
+            filename=f"user_{uid}_avatar.png",
             content_type="image/png",
             size=128,
-            data=b'\x89PNG\r\n\x1a\n' + bytes(random.getrandbits(8) for _ in range(64)),
-            uploaded_at=utcnow()
+            data=b"\x89PNG\r\n\x1a\n" + bytes(random.getrandbits(8) for _ in range(64)),
+            uploaded_at=utcnow(),
         )
         db.session.add(av)
-        avatar_count += 1
-
-    db.session.commit()
-    print(f"Created {len(users)} users, {avatar_count} avatars.")
-    return users
+        created += 1
+    print(f"Создано аватарок: {created}.")
+    return created
 
 
-def create_tasks(db, fake):
+# ---------- task creation ----------
+def _make_task_object(number: int, fake: Faker):
     from app.models import Task
-
-    print("Creating tasks pool...")
-
-    tasks = []
-
-    required_slots = list(range(1, 28))  # 1..27
-    for slot in required_slots:
-        number = slot
-        if slot in (20, 21):
-            number = 19
-
-        statement_parts = []
-        sentences = random.randint(1, 4)
-        for _ in range(sentences):
-            statement_parts.append(f"<p>{fake.sentence()}</p>")
-        statement_html = "".join(statement_parts)
-
-        answer = _make_answer_for_number(number if number != 20 else 19, fake)
-
-        task = Task(
-            number=number,
-            statement_html=statement_html,
-            answer=answer,
-            published_at=utcnow() - timedelta(days=random.randint(0, 180)),
-            source=(fake.sentence() if random.random() < SOURCE_PROBABILITY else None),
-        )
-        db.session.add(task)
-        tasks.append(task)
-
-    while len(tasks) < NUM_TASKS_POOL:
-        number = random.randint(1, 27)
-        if 19 <= number <= 21:
-            number = 19
-        statement_parts = []
-        for _ in range(random.randint(1, 6)):
-            statement_parts.append(f"<p>{fake.sentence()}</p>")
-        statement_html = "".join(statement_parts)
-        answer = _make_answer_for_number(number, fake)
-        task = Task(
-            number=number,
-            statement_html=statement_html,
-            answer=answer,
-            published_at=utcnow() - timedelta(days=random.randint(0, 180)),
-            source=(fake.sentence() if random.random() < SOURCE_PROBABILITY else None),
-        )
-        db.session.add(task)
-        tasks.append(task)
-
-    db.session.commit()
-    print(f"Created {len(tasks)} tasks.")
-    return tasks
+    text = "".join(f"<p>{fake.sentence()}</p>" for _ in range(random.randint(1, 4)))
+    return Task(
+        number=number,
+        statement_html=text,
+        answer=make_answer_csv(number, fake),
+        published_at=utcnow() - timedelta(days=random.randint(0, 180)),
+        source=(fake.sentence() if random.random() < SOURCE_PROBABILITY else None),
+    )
 
 
-def attach_files_to_some_tasks(db, tasks):
+def create_tasks(db, count: int = NUM_TASKS) -> List[int]:
+    from app.models import Task
+    fake = Faker("ru_RU")
+    created_ids: List[int] = []
+    print(f"Создаю {count} новых задач...")
+
+    def normalize_slot(s: int) -> int:
+        return 19 if s in (20, 21) else s
+
+    for _ in range(count):
+        num = normalize_slot(random.randint(1, 27))
+        t = _make_task_object(num, fake)
+        db.session.add(t)
+
+    db.session.flush()
+    rows = db.session.query(Task.id).order_by(Task.id.desc()).limit(count).all()
+    for r in reversed(rows):
+        created_ids.append(r.id)
+    print(f"Добавлено задач: {len(created_ids)}.")
+    return created_ids
+
+
+def add_attachments_for_tasks(db, task_ids: Iterable[int], proportion: float = 0.05) -> int:
     from app.models import TaskAttachment
-    count = 0
-    # attach to ~5% tasks
-    sample = random.sample(tasks, max(1, len(tasks) // 20))
-    for t in sample:
+    task_list = list(task_ids)
+    sample_size = max(1, int(len(task_list) * proportion))
+    sample = random.sample(task_list, sample_size)
+    created = 0
+    for tid in sample:
         ta = TaskAttachment(
-            task=t,
-            filename=f"{t.number}_file.pdf",
+            task_id=tid,
+            filename=f"{tid}_file.pdf",
             content_type="application/pdf",
             size=2048,
-            data=b'%PDF-1.4\n' + bytes(random.getrandbits(8) for _ in range(128)),
-            uploaded_at=utcnow()
+            data=b"%PDF-1.4\n" + bytes(random.getrandbits(8) for _ in range(128)),
+            uploaded_at=utcnow(),
         )
         db.session.add(ta)
-        count += 1
-    db.session.commit()
-    print(f"Created {count} task attachments.")
+        created += 1
+    print(f"Добавлено вложений к задачам: {created}.")
+    return created
 
 
-def create_variants_and_links(db, tasks, users, fake):
-    from app.models import Variant, VariantTask
-
-    print("Creating variants and linking 27 slots per variant (slot 20 and 21 merged into 19)...")
-    variants = []
-    potential_authors = [u for u in users if random.random() < VARIANT_PROBABILITY]
-
-    slot_to_tasks = {}
-    for slot in range(1, 28):
-        desired = 19 if slot in (20, 21) else slot
-        slot_pool = [t for t in tasks if t.number == desired]
-        slot_to_tasks[slot] = slot_pool
-
-    for _ in range(NUM_VARIANTS):
-        variant = Variant(
+# ---------- variant creation ----------
+def create_variants(db, count: int = NUM_VARIANTS, author_ids: Optional[List[int]] = None) -> List[int]:
+    from app.models import Variant, User
+    fake = Faker()
+    created_ids: List[int] = []
+    if author_ids is None:
+        author_ids = [r.id for r in db.session.query(User.id).all()] or []
+    print(f"Создаю {count} новых вариантов...")
+    for _ in range(count):
+        author_id = random.choice(author_ids) if author_ids and random.random() < 0.9 else None
+        v = Variant(
             source=(fake.sentence() if random.random() < SOURCE_PROBABILITY else None),
             created_at=utcnow() - timedelta(days=random.randint(0, 90)),
             duration=random.choice([14100, 10800, 7200]),
-            author=random.choice(potential_authors) if potential_authors and random.random() < 0.9 else None
+            author_id=author_id,
         )
-        db.session.add(variant)
-        variants.append(variant)
-    db.session.commit()
+        db.session.add(v)
+    db.session.flush()
+    rows = db.session.query(Variant.id).order_by(Variant.id.desc()).limit(count).all()
+    for r in reversed(rows):
+        created_ids.append(r.id)
+    print(f"Добавлено вариантов: {len(created_ids)}.")
+    return created_ids
 
-    id_to_task = {t.id: t for t in tasks}
 
-    variant_tasks_total = 0
-    for variant in variants:
-        used_task_ids = set()
+# ---------- task chooser (polymorphic small object) ----------
+class TaskChooser:
+    def __init__(self, db, relevant_task_ids: Iterable[int]):
+        from app.models import Task
+        rows = db.session.query(Task.id, Task.number).filter(Task.id.in_(relevant_task_ids)).all()
+        pool: Dict[int, List[int]] = {}
+        for r in rows:
+            pool.setdefault(r.number, []).append(r.id)
+        self.pool = pool
+        self.global_list = [r.id for r in rows]
+
+    def pick_for_slot(self, slot: int, used: set) -> Optional[int]:
+        desired = 19 if slot in (20, 21) else slot
+        candidates = [tid for tid in self.pool.get(desired, []) if tid not in used]
+        if candidates:
+            return random.choice(candidates)
+        other = [tid for tid in self.global_list if tid not in used]
+        if other:
+            return random.choice(other)
+        return None
+
+
+# ---------- variant_task linking ----------
+def link_tasks_to_variants(db, variant_ids: Iterable[int], task_ids: Iterable[int]) -> int:
+    from app.models import VariantTask
+    chooser = TaskChooser(db, task_ids)
+    to_insert_count = 0
+    for vid in variant_ids:
+        used: set = set()
         order = 1
         for slot in range(1, 28):
-            pool = slot_to_tasks.get(slot, [])
-
-            avail = [t for t in pool if t.id not in used_task_ids]
-
-            if not avail:
-                avail = [t for t in tasks if t.id not in used_task_ids]
-
-            if not avail:
+            tid = chooser.pick_for_slot(slot, used)
+            if tid is None:
                 continue
-
-            chosen = random.choice(avail)
-            if chosen.id in used_task_ids:
-                continue
-
-            vt = VariantTask(
-                variant=variant,
-                task=chosen,
-                order=order
-            )
+            used.add(tid)
+            vt = VariantTask(variant_id=vid, task_id=tid, order=order)
             db.session.add(vt)
-            used_task_ids.add(chosen.id)
             order += 1
-            variant_tasks_total += 1
+            to_insert_count += 1
+    print(f"Добавлено variant_task записей: {to_insert_count}.")
+    return to_insert_count
 
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"Warning: commit for variant {variant.id} failed: {e}")
-    print(f"Created {len(variants)} variants and {variant_tasks_total} variant_task links.")
-    return variants
 
-def create_attempts_and_answers(db, users, variants, fake):
-    from app.models import Attempt, AttemptAnswer, VariantTask
-    print("Creating attempts and answers with distributed dates...")
-
-    attempts_created = 0
-    answers_created = 0
-
+def _random_times_for_attempt(db, variant_id: int):
+    from app.models import Variant
     now = utcnow()
-    max_days = 30  # распределение по последнему месяцу
+    started = now - timedelta(days=random.randint(0, 29), seconds=random.randint(0, 24 * 3600 - 1))
+    finished = None
+    if random.random() >= 0.3:
+        dur = db.session.query(Variant.duration).filter(Variant.id == variant_id).scalar()
+        dur = int(dur) if dur and dur > 0 else 60
+        taken = random.randint(1, dur)
+        cand = started + timedelta(seconds=taken)
+        finished = now if cand > now else cand
+    return started, finished
 
-    # выбираем пользователей (как было)
-    for user in random.sample(users, max(1, len(users) // 2)):
-        # сколько попыток создадим для пользователя
-        num_att = random.randint(1, 5)
-        chosen_variants = random.sample(variants, min(len(variants), num_att))
 
-        for v in chosen_variants:
-            # проверяем уникальность attempt (user, variant)
-            existing = Attempt.query.filter_by(user_id=user.id, variant_id=v.id).first()
-            if existing:
+def _build_variant_task_map(db, variant_ids: Iterable[int]) -> Dict[int, List[Dict[str, Any]]]:
+    from app.models import VariantTask, Task
+
+    rows = (
+        db.session.query(
+            VariantTask.id,
+            VariantTask.variant_id,
+            Task.number,
+            Task.answer,
+        )
+        .join(Task, VariantTask.task_id == Task.id)
+        .filter(VariantTask.variant_id.in_(list(variant_ids)))
+        .order_by(VariantTask.variant_id, VariantTask.order)
+        .all()
+    )
+
+    mapping: Dict[int, List[Dict[str, Any]]] = {}
+    for row in rows:
+        mapping.setdefault(row.variant_id, []).append(
+            {
+                "vt_id": row.id,
+                "number": row.number,
+                "answer": row.answer,
+            }
+        )
+
+    return mapping
+
+
+def _make_attempt_answer(fake: Faker, vt: Dict[str, Any]):
+    if random.random() < 0.05:
+        return None, None
+
+    if random.random() < 0.7:
+        return vt["answer"], True
+
+    return make_answer_csv(vt["number"], fake), False
+
+
+def _create_answers_for_attempt(db, attempt_id: int, vtasks: List[Dict[str, Any]], fake: Faker) -> int:
+    from app.models import AttemptAnswer
+
+    created = 0
+    for vt in vtasks:
+        text, correct = _make_attempt_answer(fake, vt)
+        db.session.add(
+            AttemptAnswer(
+                attempt_id=attempt_id,
+                variant_task_id=vt["vt_id"],
+                answer_text=text,
+                is_correct=correct,
+            )
+        )
+        created += 1
+
+    return created
+
+
+def _create_single_attempt(db, user_id: int, variant_id: int):
+    from app.models import Attempt
+
+    exists = (
+        db.session.query(Attempt.id)
+        .filter_by(user_id=user_id, variant_id=variant_id)
+        .first()
+    )
+    if exists:
+        return None
+
+    started_at, finished_at = _random_times_for_attempt(db, variant_id)
+
+    attempt = Attempt(
+        user_id=user_id,
+        variant_id=variant_id,
+        started_at=started_at,
+        finished_at=finished_at,
+    )
+    db.session.add(attempt)
+    db.session.flush()
+    return attempt
+
+
+def create_attempts_and_answers(
+        db,
+        variant_ids: Iterable[int],
+        user_ids: Iterable[int],
+) -> int:
+    fake = Faker("ru_RU")
+    created_attempts = 0
+    created_answers = 0
+
+    user_list = list(user_ids)
+    if not user_list:
+        print("Нет пользователей для создания попыток — пропускаю.")
+        return 0
+
+    variant_task_map = _build_variant_task_map(db, variant_ids)
+
+    for variant_id in variant_ids:
+        vtasks = variant_task_map.get(variant_id)
+        if not vtasks:
+            continue
+
+        attempts_count = random.randint(1, ATTEMPTS_MAX_PER_VARIANT)
+        users_sample = random.sample(user_list, min(len(user_list), attempts_count))
+
+        for user_id in users_sample:
+            attempt = _create_single_attempt(db, user_id, variant_id)
+            if attempt is None:
                 continue
 
-            # случайная дата старта в пределах последних max_days дней (разная для каждой попытки)
-            days_ago = random.randint(0, max_days - 1)
-            seconds_in_day = random.randint(0, 24 * 3600 - 1)
-            started_at = now - timedelta(days=days_ago, seconds=seconds_in_day)
-
-            # решаем, будет ли попытка завершена
-            finished_is_none = random.random() < 0.3
-            finished_at = None
-            if not finished_is_none:
-                # variant.duration хранится в секундах (обязательное поле)
-                dur = getattr(v, "duration", None) or 0
-                if dur <= 0:
-                    # защита на случай некорректного duration — ставим небольшой временной отрезок
-                    dur = 60
-                taken_seconds = random.randint(1, int(dur))
-                candidate_finished = started_at + timedelta(seconds=taken_seconds)
-
-                # не позволяем finished_at быть в будущем относительно now
-                if candidate_finished > now:
-                    finished_at = now
-                else:
-                    finished_at = candidate_finished
-
-            attempt = Attempt(
-                examinee=user,
-                variant=v,
-                started_at=started_at,
-                finished_at=finished_at
+            created_answers += _create_answers_for_attempt(
+                db,
+                attempt.id,
+                vtasks,
+                fake,
             )
-            db.session.add(attempt)
-            db.session.flush()  # чтобы получить attempt.id
+            created_attempts += 1
 
-            # получаем список VariantTask для варианта в порядке order
-            vtasks = VariantTask.query.filter_by(variant_id=v.id).order_by(VariantTask.order).all()
-
-            for vt in vtasks:
-                # небольшой шанс оставить вопрос без ответа
-                if random.random() < 0.05:
-                    answer_text = None
-                    is_correct = None
-                else:
-                    correct = random.random() < 0.7
-                    if correct:
-                        # кладём "правильный" ответ из задания
-                        answer_text = vt.task.answer
-                        is_correct = True
-                    else:
-                        # генерируем неправильный ответ той же "формы"
-                        slot = vt.task.number
-                        answer_text = _make_answer_for_number(slot, fake)
-                        is_correct = False
-
-                aa = AttemptAnswer(
-                    attempt=attempt,
-                    variant_task=vt,
-                    answer_text=answer_text,
-                    is_correct=is_correct
-                )
-                db.session.add(aa)
-                answers_created += 1
-
-            attempts_created += 1
-
-            # коммитим после каждой попытки (как в исходнике) — безопасно и контролируемо
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print(f"Warning: commit failed for attempt user={user.id} variant={v.id}: {e}")
-
-    print(f"Created {attempts_created} attempts and ~{answers_created} attempt answers.")
+    print(f"Создано попыток: {created_attempts}, ответов: {created_answers}.")
+    return created_attempts
 
 
+def seed_add_new(db,
+                 users_n: int = NUM_USERS,
+                 tasks_n: int = NUM_TASKS,
+                 variants_n: int = NUM_VARIANTS) -> None:
+    from app.models import User
+    try:
+        print("Начинаю генерацию новых данных. Вся операция будет выполнена одной транзакцией.")
+        new_user_ids = create_users(db, users_n)
+        add_avatars_for_users(db, new_user_ids)
 
-def create_user_roles_for_demo(db, users):
-    from app.models import Role
-    role_user = Role.query.filter_by(name='user').first()
-    role_guest = Role.query.filter_by(name='guest').first()
-    for u in random.sample(users, max(1, len(users) // 10)):
-        if role_user not in u.roles:
-            u.roles.append(role_user)
-    for u in random.sample(users, max(1, len(users) // 20)):
-        if role_guest not in u.roles:
-            u.roles.append(role_guest)
-    db.session.commit()
+        new_task_ids = create_tasks(db, tasks_n)
+        add_attachments_for_tasks(db, new_task_ids)
 
+        db.session.flush()
 
-def create_test_data(db):
-    fake = Faker('ru_RU')
+        new_variant_ids = create_variants(db, variants_n, author_ids=list(new_user_ids) or None)
 
-    # create roles first
-    create_roles(db)
+        link_tasks_to_variants(db, new_variant_ids, new_task_ids)
 
-    users = create_users(db, fake)
-    tasks = create_tasks(db, fake)
-    attach_files_to_some_tasks(db, tasks)
-    variants = create_variants_and_links(db, tasks, users, fake)
-    create_user_roles_for_demo(db, users)
-    create_attempts_and_answers(db, users, variants, fake)
+        all_user_ids = [r.id for r in db.session.query(User.id).all()]
+        create_attempts_and_answers(db, new_variant_ids, all_user_ids)
 
-    print("\n" + "=" * 50)
-    print("SEED COMPLETE")
-    print(f"Users: {len(users)}")
-    print(f"Tasks pool: {len(tasks)}")
-    print(f"Variants: {len(variants)}")
-    print("=" * 50)
+        db.session.commit()
+        print("Транзакция завершена: все новые данные сохранены.")
+    except Exception as e:
+        db.session.rollback()
+        print("Ошибка при сидировании - выполнен откат транзакции.")
+        print(e)
+        raise
 
 
 def main():
@@ -404,9 +414,11 @@ def main():
     sys.path.insert(0, str(get_project_root()))
     app = create_app()
 
+    db.session.expire_on_commit = False
+
     with app.app_context():
-        create_test_data(db)
+        seed_add_new(db)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
