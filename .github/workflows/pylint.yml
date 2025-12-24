@@ -21,4 +21,4 @@ jobs:
 
       - name: Analyze code with pylint
         run: |
-          poetry run pylint --rcfile=.pylintrc $(git ls-files '*.py' | grep -v migrations || true)
+          poetry run pylint app --rcfile=.pylintrc
