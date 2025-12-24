@@ -13,7 +13,7 @@ def attempt(attempt_id: int):
     attempt_obj = Attempt.query.get(attempt_id)
     if not attempt_obj:
         abort(404)
-    elif attempt_obj.user_id != current_user.id:
+    elif not (attempt_obj.user_id == current_user.id or current_user.is_admin):
         abort(403)
 
     variant = attempt_obj.variant
@@ -42,7 +42,7 @@ def get_attempt_data(attempt_id: int):
 @login_required
 def save_answer(attempt_id: int):
     attempt = Attempt.query.get(attempt_id)
-    if not attempt or attempt.user_id != current_user.id:
+    if not attempt or not (attempt.user_id == current_user.id or current_user.is_admin):
         return jsonify(ok=False, error='Попытка не найдена'), 404
 
     if attempt.finished_at:
@@ -76,7 +76,7 @@ def save_answer(attempt_id: int):
 @login_required
 def finish_attempt(attempt_id: int):
     attempt = Attempt.query.get(attempt_id)
-    if not attempt or attempt.user_id != current_user.id:
+    if not attempt or not (attempt.user_id == current_user.id or current_user.is_admin):
         return jsonify(ok=False, error='Попытка не найдена'), 404
 
     if attempt.finished_at:
@@ -108,7 +108,7 @@ def results_page(attempt_id: int):
 
     if not attempt:
         abort(404)
-    elif attempt.user_id != current_user.id and not current_user.is_admin:
+    elif not (attempt.user_id == current_user.id or current_user.is_admin):
         abort(403)
 
     if not attempt.finished_at:

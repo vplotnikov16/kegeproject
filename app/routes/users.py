@@ -11,14 +11,13 @@ users_bp = Blueprint('users', __name__)
 
 
 @users_bp.route('/view_user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
 def view_user(user_id):
-    if current_user.id == user_id:
+    if current_user.is_authenticated and current_user.id == user_id:
         return redirect(url_for('profile.profile'))
 
     user = User.query.get_or_404(user_id)
 
-    is_admin = current_user.is_admin
+    is_admin = current_user.is_authenticated and current_user.is_admin
     form = None
 
     if is_admin:

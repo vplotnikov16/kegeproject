@@ -109,6 +109,48 @@ document.addEventListener('DOMContentLoaded', function () {
   updateGenerateState();
   updateSelectAllUI();
 
+    if (searchBtn) {
+      searchBtn.addEventListener('click', async () => {
+        const id = searchInput.value.trim();
+
+        if (!id) {
+          variantsList.innerHTML = '<div class="alert alert-warning p-2">Введите ID варианта</div>';
+          return;
+        }
+
+        await fetchVariantById(id);
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          searchBtn?.click();
+        }
+      });
+    }
+
+    if (listAllBtn) {
+      listAllBtn.addEventListener('click', async () => {
+        variantsList.innerHTML = '<div class="text-muted small">Загрузка списка вариантов…</div>';
+        variantPreviewCard.classList.add('d-none');
+
+        try {
+          const res = await fetch('/variants/search?all=1');
+          const data = await res.json();
+
+          if (!data.ok) {
+            variantsList.innerHTML = `<div class="alert alert-warning p-2">${data.message || 'Ошибка загрузки'}</div>`;
+            return;
+          }
+
+          renderVariantsList(data.variants);
+        } catch (err) {
+          variantsList.innerHTML = `<div class="alert alert-danger p-2">Ошибка: ${err.message}</div>`;
+        }
+      });
+    }
+
   function collectSelection() {
     const selection = [];
     kimCheckboxes.forEach(cb => {
