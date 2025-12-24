@@ -111,7 +111,7 @@ class User(UserMixin, IModel):
         Предполагаем, что роль администратора имеет id = 0.
         """
         # FIXME: с id == 0 такой костыль, надо однажды это как-нибудь исправить
-        return any(role.id == 0 for role in self.roles)
+        return any(role.id == 1 for role in self.roles)
 
     @property
     def as_dict(self) -> Dict:
