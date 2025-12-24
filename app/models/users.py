@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.extensions import db
 from app.models.model_abc import IModel
+from app.models.roles import DefaultRoles
 from app.utils.date_utils import utcnow
 from app.utils.name_utils import get_username
 
@@ -104,6 +105,15 @@ class User(UserMixin, IModel):
 
         return username
 
+    def has_role(self, role_name: str) -> bool:
+        """
+        Проверка, есть ли у пользователя указанная роль.
+
+        :param role_name: Имя роли (например, 'admin', 'user', 'guest')
+        :return: True, если роль найдена
+        """
+        return any(role.name == role_name for role in self.roles)
+
     @property
     def is_admin(self) -> bool:
         """
@@ -111,7 +121,7 @@ class User(UserMixin, IModel):
         Предполагаем, что роль администратора имеет id = 0.
         """
         # FIXME: с id == 0 такой костыль, надо однажды это как-нибудь исправить
-        return any(role.id == 1 for role in self.roles)
+        return self.has_role(DefaultRoles.admin)
 
     @property
     def as_dict(self) -> Dict:

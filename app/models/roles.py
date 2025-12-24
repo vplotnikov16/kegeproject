@@ -1,7 +1,13 @@
-from typing import Iterable, Tuple
+from sqlalchemy import Enum
 
 from app.extensions import db
 from app.models.model_abc import IModel
+
+
+class DefaultRoles(str, Enum):
+    guest = 'guest'
+    admin = 'admin'
+    user = 'user'
 
 
 class Role(IModel):
@@ -10,6 +16,7 @@ class Role(IModel):
     id = db.Column(
         db.Integer,
         primary_key=True,
+        autoincrement=True,
     )
     name = db.Column(
         db.String(20),
@@ -28,15 +35,6 @@ class Role(IModel):
         return f"Role(id={self.id} name={self.name})"
 
 
-def _default_roles() -> Iterable[Tuple[int, str]]:
-    roles = (
-        (0, 'admin'),
-        (1, 'guest'),
-        (2, 'user'),
-    )
-    return roles
-
-
 def ensure_default_roles(app=None) -> None:
     from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
     ctx_entered = False
@@ -46,18 +44,15 @@ def ensure_default_roles(app=None) -> None:
         ctx_entered = True
 
     try:
-        for role_id, role_name in _default_roles():
+        for role_name in DefaultRoles:
             existing = Role.query.filter_by(name=role_name).first()
             if existing:
                 continue
 
-            id_taken = Role.query.get(role_id)
-            if id_taken is None:
-                role = Role(id=role_id, name=role_name)
-            else:
+            role = Role.query.get(name=role_name.value)
+            if role is None:
                 role = Role(name=role_name)
-
-            db.session.add(role)
+                db.session.add(role)
         try:
             db.session.commit()
         except IntegrityError:
