@@ -19,7 +19,7 @@ class Attempt(IModel):
     )
     variant_id = db.Column(
         db.Integer,
-        db.ForeignKey('variants.id'),
+        db.ForeignKey('variants.id', ondelete='CASCADE'),
         nullable=False,
     )
     started_at = db.Column(

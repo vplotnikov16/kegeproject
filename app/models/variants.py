@@ -45,6 +45,8 @@ class Variant(IModel):
     attempts = db.relationship(
         'Attempt',
         back_populates='variant',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
     )
 
     @classmethod
