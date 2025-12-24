@@ -24,24 +24,129 @@
                 <div class="card-header">Выбрать номера КИМ</div>
                 <div class="card-body">
                     <form id="kim-form" onsubmit="return false;">
+                        <!-- Кнопка "Выбрать все" -->
                         <div class="mb-3">
-                            <label for="kim-select" class="form-label">Номера КИМ (можно выбрать несколько)</label>
-                            <select id="kim-select" class="form-select" multiple size="8" aria-label="Выбор КИМ">
-                                {# генерируем 1..27 опции как раньше #}
-                                {% for i in range(1,28) %}
-                                <option value="{{ i }}">{{ i }}. {{ loop.index0 == i-1 and '' }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">Выберите хотя бы один номер. Для множественного выбора — Ctrl/Cmd+click или Shift.</div>
+                            <button id="select-all-btn" class="btn btn-outline-secondary btn-sm" type="button">
+                                Выбрать все
+                            </button>
+                        </div>
+
+                        <!-- Чекбоксы для выбора номеров КИМ -->
+                        <div class="mb-3">
+                            <label class="form-label">Выберите номера КИМ:</label>
+                            <div id="kim-checkboxes" class="kim-checkbox-grid">
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="1" id="kim-1">
+                                    <label class="form-check-label" for="kim-1">1. Анализ информационных моделей</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="2" id="kim-2">
+                                    <label class="form-check-label" for="kim-2">2. Таблицы истинности логических выражений</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="3" id="kim-3">
+                                    <label class="form-check-label" for="kim-3">3. Поиск и сортировка в базах данных</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="4" id="kim-4">
+                                    <label class="form-check-label" for="kim-4">4. Кодирование и декодирование данных. Условие Фано</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="5" id="kim-5">
+                                    <label class="form-check-label" for="kim-5">5. Анализ алгоритмов для исполнителей</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="6" id="kim-6">
+                                    <label class="form-check-label" for="kim-6">6. Циклические алгоритмы для Исполнителя</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="7" id="kim-7">
+                                    <label class="form-check-label" for="kim-7">7. Кодирование графической и звуковой информации</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="8" id="kim-8">
+                                    <label class="form-check-label" for="kim-8">8. Комбинаторика</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="9" id="kim-9">
+                                    <label class="form-check-label" for="kim-9">9. Обработка числовой информации в электронных таблицах</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="10" id="kim-10">
+                                    <label class="form-check-label" for="kim-10">10. Поиск слова в текстовом документе</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="11" id="kim-11">
+                                    <label class="form-check-label" for="kim-11">11. Вычисление количества информации</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="12" id="kim-12">
+                                    <label class="form-check-label" for="kim-12">12. Машина Тьюринга</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="13" id="kim-13">
+                                    <label class="form-check-label" for="kim-13">13. IP адреса и маски</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="14" id="kim-14">
+                                    <label class="form-check-label" for="kim-14">14. Позиционные системы счисления</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="15" id="kim-15">
+                                    <label class="form-check-label" for="kim-15">15. Истинность логического выражения</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="16" id="kim-16">
+                                    <label class="form-check-label" for="kim-16">16. Вычисление значения рекурсивной функции</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="17" id="kim-17">
+                                    <label class="form-check-label" for="kim-17">17. Обработка целочисленных данных. Проверка делимости</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="18" id="kim-18">
+                                    <label class="form-check-label" for="kim-18">18. Динамическое программирование в электронных таблицах</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="19" id="kim-19">
+                                    <label class="form-check-label" for="kim-19">19-21. Теория игр</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="22" id="kim-22">
+                                    <label class="form-check-label" for="kim-22">22. Многопоточные вычисления</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="23" id="kim-23">
+                                    <label class="form-check-label" for="kim-23">23. Динамическое программирование
+                                        (количество программ)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="24" id="kim-24">
+                                    <label class="form-check-label" for="kim-24">24. Обработка символьных строк</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="25" id="kim-25">
+                                    <label class="form-check-label" for="kim-25">25. Обработка целочисленных данных. Поиск делителей</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="26" id="kim-26">
+                                    <label class="form-check-label" for="kim-26">26. Обработка данных с помощью сортировки</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input kim-checkbox" type="checkbox" value="27" id="kim-27">
+                                    <label class="form-check-label" for="kim-27">27. Анализ данных</label>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button id="btn-load-by-kim" class="btn btn-secondary">Показать задачи по выбранным КИМ</button>
+                            <button id="btn-load-by-kim" class="btn btn-secondary">Показать задачи</button>
                             <button id="btn-clear-results" class="btn btn-outline-secondary">Очистить</button>
                         </div>
                     </form>
                 </div>
             </div>
+
 
             <div class="card">
                 <div class="card-header">Показать задачу по идентификатору</div>
@@ -62,8 +167,9 @@
         <!-- Колонка результатов -->
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header">
-                    Результаты
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Результаты</span>
+                    <span id="results-counter" class="badge bg-secondary"></span>
                 </div>
 
                 {# Контейнер с собственным скроллом; внутри будем рендерить список карточек #}
@@ -71,6 +177,13 @@
                     <div id="results" class="results-container p-3">
                         <div class="text-muted">Результаты поиска появятся здесь</div>
                     </div>
+                </div>
+
+                <!-- Пагинация -->
+                <div class="card-footer">
+                    <nav aria-label="Навигация по результатам">
+                        <ul id="pagination" class="pagination pagination-sm mb-0 justify-content-center"></ul>
+                    </nav>
                 </div>
             </div>
         </div>
