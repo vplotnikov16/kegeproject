@@ -1,4 +1,4 @@
-from sqlalchemy import Enum
+from enum import Enum
 
 from app.extensions import db
 from app.models.model_abc import IModel
@@ -44,15 +44,14 @@ def ensure_default_roles(app=None) -> None:
         ctx_entered = True
 
     try:
-        for role_name in DefaultRoles:
+        for role_enum in DefaultRoles:
+            role_name = role_enum.value
             existing = Role.query.filter_by(name=role_name).first()
             if existing:
                 continue
 
-            role = Role.query.get(name=role_name.value)
-            if role is None:
-                role = Role(name=role_name)
-                db.session.add(role)
+            role = Role(name=role_name)
+            db.session.add(role)
         try:
             db.session.commit()
         except IntegrityError:
