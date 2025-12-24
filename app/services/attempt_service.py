@@ -171,7 +171,7 @@ class AttemptService:
             user_answer = answer.answer_text if answer else None
 
             # Определяем, является ли это задачей 19
-            is_task_19 = (task.number == 19)
+            is_task_19 = task.number == 19
 
             results.append({
                 'task_number': task.number,
