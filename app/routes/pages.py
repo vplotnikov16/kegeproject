@@ -15,6 +15,12 @@ def index():
     return render_template("index.html", dashboard_data=dashboard_data)
 
 
+@pages_bp.route("/about", methods=['GET'])
+def about():
+    """Страница о проекте"""
+    return render_template("about.html")
+
+
 @pages_bp.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
