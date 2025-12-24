@@ -25,6 +25,8 @@ disable =
 
 [FORMAT]
 max-line-length = 140
+max-locals = 16
+max-nested-blocks = 6
 
 [BASIC]
 good-names =

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, abort
+from flask import Blueprint, render_template, jsonify, request, abort, redirect, url_for
 from flask_login import login_required, current_user
 
 from app.models import Attempt, VariantTask
@@ -16,13 +16,25 @@ def attempt(attempt_id: int):
     elif not (attempt_obj.user_id == current_user.id or current_user.is_admin):
         abort(403)
 
+    if attempt_obj.finished_at:
+        return redirect(url_for('attempts.results_page', attempt_id=attempt_id))
+
     variant = attempt_obj.variant
     variant_tasks = VariantTask.query.filter_by(variant_id=variant.id).order_by(VariantTask.order).all()
+
+    # Подсчёт реального количества задач для отображения
+    total_display_tasks = 0
+    for vt in variant_tasks:
+        if vt.task.number == 19:
+            total_display_tasks += 3  # Задача 19 = 3 задачи (19, 20, 21)
+        else:
+            total_display_tasks += 1
+
     kwargs = {
         'attempt': attempt_obj,
         'variant': variant,
         'variant_tasks': variant_tasks,
-        'total_tasks': len(variant_tasks),
+        'total_tasks': total_display_tasks,
     }
     return render_template('attempts/attempt.html', **kwargs)
 
@@ -101,17 +113,25 @@ def get_results(attempt_id: int):
     return jsonify(results)
 
 
-@attempts_bp.route('/<int:attempt_id>/results-page', methods=['GET'])
+@attempts_bp.route('/<int:attempt_id>/results-page')
 @login_required
 def results_page(attempt_id: int):
     attempt = Attempt.query.get(attempt_id)
-
     if not attempt:
         abort(404)
     elif not (attempt.user_id == current_user.id or current_user.is_admin):
         abort(403)
 
     if not attempt.finished_at:
-        return render_template('error.html', error_code=400, error_msg='Exam not finished'), 400
+        return redirect(url_for('attempts.attempt', attempt_id=attempt_id))
 
-    return render_template('attempts/results.html', attempt=attempt, variant=attempt.variant)
+    variant = attempt.variant
+
+    # Проверка, является ли вариант полным
+    from app.services.user_stats_service import UserStatsService
+    is_full_variant = UserStatsService.is_full_variant(variant)
+
+    return render_template('attempts/results.html',
+                           attempt=attempt,
+                           variant=variant,
+                           is_full_variant=is_full_variant)

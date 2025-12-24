@@ -52,6 +52,16 @@ class Variant(IModel):
         return "Варианты"
 
     @property
+    def total_display_tasks(self):
+        result = 0
+        for vt in self.tasks:
+            if vt.task.number == 19:
+                result += 3  # Задача 19 = 3 задачи (19, 20, 21)
+            else:
+                result += 1
+        return result
+
+    @property
     def as_dict(self) -> Dict:
         from flask_login import current_user
         from flask import url_for
@@ -65,7 +75,7 @@ class Variant(IModel):
             "source": self.source,
             "created_at": self.created_at.strftime("%d.%m.%Y"),
             "duration": self.duration,
-            "tasks_count": len(self.tasks),
+            "tasks_count": self.total_display_tasks,
             "can_edit": can_edit,
             "author_username": self.author.username if self.author else None,
             "author_avatar_url": url_for('profile.get_avatar', user_id=self.author.id if self.author else -1),

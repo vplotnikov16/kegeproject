@@ -22,6 +22,25 @@
 
         <div id="resultsTableContainer"></div>
 
+        {% if is_full_variant %}
+        <div class="score-summary mt-4" id="scoreContainer">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="score-card">
+                        <div class="score-label">Первичный балл</div>
+                        <div class="score-value" id="primaryScore">-</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="score-card">
+                        <div class="score-label">Вторичный балл (ЕГЭ)</div>
+                        <div class="score-value" id="secondaryScore">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="results-footer">
             <a href="{{ url_for('variants.view_variant', variant_id=variant.id) }}" class="btn btn-primary">
                 Назад к варианту
@@ -37,7 +56,8 @@
     const attemptData = {
         attemptId: {{ attempt.id }},
         startedAt: '{{ attempt.started_at.isoformat() }}',
-        finishedAt: '{{ attempt.finished_at.isoformat() }}'
+        finishedAt: '{{ attempt.finished_at.isoformat() }}',
+        isFullVariant: {{ 'true' if is_full_variant else 'false' }}
     };
 
     async function loadResults() {
@@ -45,9 +65,14 @@
             const response = await fetch(`/attempts/${attemptData.attemptId}/results`);
             const data = await response.json();
             renderResults(data);
+
+            // Если полный вариант - вычислить и показать баллы
+            if (attemptData.isFullVariant) {
+                calculateScores(data);
+            }
         } catch (error) {
             console.error('Error loading results:', error);
-            document.getElementById('resultsTableContainer').innerHTML = 
+            document.getElementById('resultsTableContainer').innerHTML =
                 '<div class="alert alert-danger">Ошибка при загрузке результатов</div>';
         }
     }
@@ -164,15 +189,57 @@
         container.innerHTML = html;
     }
 
+    function calculateScores(data) {
+        // Система баллов ЕГЭ информатика (29 максимум)
+        const taskScores = {
+            1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1,
+            11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 3,
+            22: 1, 23: 1, 24: 1, 25: 1, 26: 2, 27: 2,
+        };
+
+        let primaryScore = 0;
+
+        data.results.forEach(result => {
+            if (result.is_task_19_group) {
+                // Задача 19: считаем каждую правильную ячейку
+                const correctAnswers = parseTask19Answer(result.correct_answer);
+                const userAnswers = parseTask19Answer(result.user_answer);
+
+                for (let i = 0; i < 3; i++) {
+                    if (normalizeAnswer(correctAnswers[i]) === normalizeAnswer(userAnswers[i]) && userAnswers[i]) {
+                        primaryScore += 1;
+                    }
+                }
+            } else {
+                // Обычная задача
+                const isCorrect = normalizeAnswer(result.correct_answer) === normalizeAnswer(result.user_answer);
+                if (isCorrect && result.user_answer) {
+                    primaryScore += taskScores[result.task_number] || 0;
+                }
+            }
+        });
+
+        const secondaryScore = convertToSecondaryScore(primaryScore);
+
+        document.getElementById('primaryScore').textContent = `${primaryScore}/29`;
+        document.getElementById('secondaryScore').textContent = `${secondaryScore}/100`;
+    }
+
+    function convertToSecondaryScore(primary) {
+        const scoreTable = {
+            0: 0, 1: 7, 2: 14, 3: 20, 4: 27, 5: 34, 6: 40, 7: 43, 8: 46,
+            9: 48, 10: 51, 11: 54, 12: 56, 13: 59, 14: 62, 15: 64,
+            16: 67, 17: 70, 18: 72, 19: 75, 20: 78, 21: 80, 22: 83,
+            23: 85, 24: 88, 25: 90, 26: 93, 27: 95, 28: 98, 29: 100,
+        };
+        return scoreTable[Math.min(primary, 29)] || 100;
+    }
+
     function parseTask19Answer(answerText) {
-        /**
-         * Парсит ответ на задачу 19 (таблица 1x3)
-         * Формат JSON: {"0_0": "A", "0_1": "B", "0_2": "C"}
-         * Возвращает массив [A, B, C]
-         */
         if (!answerText) return ['', '', ''];
 
         try {
+            // Если JSON формат
             const answers = JSON.parse(answerText);
             return [
                 answers['0_0'] || '',
@@ -180,8 +247,13 @@
                 answers['0_2'] || ''
             ];
         } catch (e) {
-            // Если не JSON, возвращаем как есть для первой ячейки
-            return [answerText, '', ''];
+            // Если CSV формат: "A,B,C"
+            const parts = answerText.split(',').map(s => s.trim());
+            return [
+                parts[0] || '',
+                parts[1] || '',
+                parts[2] || ''
+            ];
         }
     }
 

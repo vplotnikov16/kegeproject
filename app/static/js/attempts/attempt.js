@@ -192,10 +192,70 @@ async function saveTableAnswer(variantTaskId) {
 }
 
 function updateStats() {
-    const answered = Object.keys(attemptState.answers).length;
-    const total = attemptState.tasks.length;
-    document.getElementById('answeredLabel').textContent = `${answered}/${total}`;
+    // Подсчёт общего количества задач с учётом задачи 19
+    let totalTasks = 0;
+    attemptState.tasks.forEach(task => {
+        if (task.number === 19) {
+            totalTasks += 3;  // Задача 19 = 3 задачи
+        } else {
+            totalTasks += 1;
+        }
+    });
+
+    // Подсчёт отвеченных задач
+    let answeredCount = 0;
+
+    for (const [variantTaskId, answerText] of Object.entries(attemptState.answers)) {
+        if (!answerText || !answerText.trim()) continue;
+
+        // Найти задачу по variant_task_id
+        const task = attemptState.tasks.find(t => t.variant_task_id == variantTaskId);
+        if (!task) continue;
+
+        if (task.number === 19) {
+            // Для задачи 19 считаем каждую заполненную ячейку
+            const filled = countFilledCellsInCSV(answerText);
+            answeredCount += filled;
+        } else {
+            // Для остальных задач: если есть хотя бы одна заполненная ячейка = ответ дан
+            if (hasAnyFilledCell(answerText)) {
+                answeredCount += 1;
+            }
+        }
+    }
+
+    document.getElementById('answeredLabel').textContent = `${answeredCount}/${totalTasks}`;
 }
+
+/**
+ * Подсчитать количество заполненных ячеек в CSV-ответе для задачи 19
+ * Формат CSV: "A,B,C" где каждая непустая ячейка считается
+ */
+function countFilledCellsInCSV(csv) {
+    if (!csv || !csv.trim()) return 0;
+
+    const cells = csv.split(',').map(c => c.trim());
+    return cells.filter(c => c.length > 0).length;
+}
+
+/**
+ * Проверить, есть ли хотя бы одна заполненная ячейка в CSV-ответе
+ * Для задач с таблицами (кроме 19): любая заполненная ячейка = ответ дан
+ */
+function hasAnyFilledCell(csv) {
+    if (!csv || !csv.trim()) return false;
+
+    // Парсим CSV
+    const rows = csv.split('\n');
+    for (const row of rows) {
+        const cells = row.split(',');
+        if (cells.some(c => c.trim().length > 0)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 function startTimer() {
     if (attemptState.isFinished) return;

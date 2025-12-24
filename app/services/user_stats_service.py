@@ -30,36 +30,38 @@ class UserStatsService:
             variant_tasks = VariantTask.query.filter_by(variant_id=attempt.variant_id).all()
 
             # Подсчёт реального количества задач для отображения
-            total_display_tasks = 0
+            total_display_tasks = attempt.variant.total_display_tasks
             correct_count = 0
 
             for vt in variant_tasks:
                 answer = next((a for a in attempt.answers if a.variant_task_id == vt.id), None)
 
+                # Если ответа нет вообще - пропускаем
+                if not answer:
+                    continue
+
+                # Обработка задачи 19 (отдельно для каждой ячейки)
                 if vt.task.number == 19:
-                    # Задача 19 = 3 подзадачи
-                    total_display_tasks += 3
+                    # Задача 19: проверяем каждую ячейку отдельно (формат CSV: "A,B,C")
+                    try:
+                        # Парсим CSV
+                        user_cells = [c.strip() for c in (answer.answer_text.split(',') if answer.answer_text else [])]
+                        correct_cells = [c.strip() for c in (vt.task.answer.split(',') if vt.task.answer else [])]
 
-                    if answer and answer.answer_text:
-                        # Парсим таблицу и считаем правильные ответы
-                        try:
-                            import json
-                            user_answers = json.loads(answer.answer_text)
-                            correct_answers = json.loads(vt.task.answer) if vt.task.answer else {}
+                        # Проверяем каждую ячейку (максимум 3)
+                        for i in range(3):
+                            user_val = user_cells[i] if i < len(user_cells) else ''
+                            correct_val = correct_cells[i] if i < len(correct_cells) else ''
 
-                            for key in ['0_0', '0_1', '0_2']:
-                                user_val = user_answers.get(key, '').strip().lower()
-                                correct_val = correct_answers.get(key, '').strip().lower()
-
-                                if user_val and user_val == correct_val:
-                                    correct_count += 1
-                        except (json.JSONDecodeError, AttributeError):
-                            pass
+                            # Если ячейка заполнена и правильная - считаем
+                            if user_val and correct_val and user_val.lower() == correct_val.lower():
+                                correct_count += 1
+                    except (IndexError, AttributeError, ValueError):
+                        # При ошибке парсинга не засчитываем ничего
+                        pass
                 else:
-                    # Обычная задача
-                    total_display_tasks += 1
-
-                    if answer and answer.is_correct:
+                    # Обычная задача: используем поле is_correct
+                    if answer.is_correct:
                         correct_count += 1
 
             score = (correct_count / total_display_tasks * 100) if total_display_tasks > 0 else 0
@@ -73,13 +75,13 @@ class UserStatsService:
                 'correct_answers': correct_count,
                 'total_answers': total_display_tasks,
                 'score': round(score, 2),
-                'is_full_variant': UserStatsService._is_full_variant(attempt.variant),
+                'is_full_variant': UserStatsService.is_full_variant(attempt.variant),
             })
 
         return result
 
     @staticmethod
-    def _is_full_variant(variant: Variant) -> bool:
+    def is_full_variant(variant: Variant) -> bool:
         tasks = VariantTask.query.filter_by(variant_id=variant.id).all()
 
         # Подсчитываем количество каждого номера КИМ
@@ -134,7 +136,7 @@ class UserStatsService:
             return None
 
         variant = attempt.variant
-        is_full = UserStatsService._is_full_variant(variant)
+        is_full = UserStatsService.is_full_variant(variant)
 
         # Подсчёт по номерам задач (1-27)
         answers_by_number = {}
@@ -272,7 +274,7 @@ class UserStatsService:
 
         trends = []
         for attempt in attempts:
-            if not UserStatsService._is_full_variant(attempt.variant):
+            if not UserStatsService.is_full_variant(attempt.variant):
                 continue
 
             time_spent_minutes = (attempt.finished_at - attempt.started_at).total_seconds() / 60
@@ -318,7 +320,7 @@ class UserStatsService:
             scores.append(score)
             best_score = max(best_score, score)
 
-            if UserStatsService._is_full_variant(attempt.variant):
+            if UserStatsService.is_full_variant(attempt.variant):
                 full_count += 1
 
         return {
