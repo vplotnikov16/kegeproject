@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}О проекте - Экзам-ON{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/about.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="about-container">
+    <!-- Hero Section -->
+    <section class="about-hero">
+        <div class="hero-content">
+            <h1 class="hero-title" data-scroll>Экзам-ON</h1>
+            <p class="hero-subtitle" data-scroll>Информационная система подготовки к компьютерным выпускным экзаменам</p>
+        </div>
+        <div class="hero-decoration" data-scroll-transform>
+            <div class="decoration-item"></div>
+        </div>
+    </section>
+
+    <!-- University Info -->
+    <section class="section-university">
+        <div class="container-section">
+            <div class="section-header" data-scroll>
+                <h2>О разработке</h2>
+                <div class="header-line"></div>
+            </div>
+
+            <div class="uni-grid">
+                <div class="uni-card" data-scroll>
+                    <h3>Учебное учреждение</h3>
+                    <p class="card-main">ФГБОУ ВО Уфимский университет науки и технологий</p>
+                    <p class="card-sub">Кафедра вычислительной математики и кибернетики</p>
+                </div>
+
+                <div class="uni-card" data-scroll>
+                    <h3>Дисциплина</h3>
+                    <p class="card-main">Администрирование информационных систем</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Developers Section -->
+    <section class="section-developers">
+        <div class="container-section">
+            <div class="section-header" data-scroll>
+                <h2>Разработчики проекта</h2>
+                <div class="header-line"></div>
+            </div>
+
+            <div class="developers-grid">
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/vvplotnikov.jpg') }}" alt="Плотников В. В." class="developer-avatar">
+                    </div>
+                    <h4>Плотников В. В.</h4>
+                    <p class="developer-group">группа МО-425Б</p>
+                </div>
+
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Зулкарнаев Д. Р." class="developer-avatar">
+                    </div>
+                    <h4>Зулкарнаев Д. Р.</h4>
+                    <p class="developer-group">группа МО-426Б</p>
+                </div>
+
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Саитова Э. Р." class="developer-avatar">
+                    </div>
+                    <h4>Саитова Э. Р.</h4>
+                    <p class="developer-group">группа МО-426Б</p>
+                </div>
+
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Лисина Н. Е." class="developer-avatar">
+                    </div>
+                    <h4>Лисина Н. Е.</h4>
+                    <p class="developer-group">группа МО-426Б</p>
+                </div>
+
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Юсупова Ю. Р." class="developer-avatar">
+                    </div>
+                    <h4>Юсупова Ю. Р.</h4>
+                    <p class="developer-group">группа МО-426Б</p>
+                </div>
+
+                <div class="developer-card" data-scroll>
+                    <div class="avatar-wrapper">
+                        <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Юсупова З. И." class="developer-avatar">
+                    </div>
+                    <h4>Юсупова З. И.</h4>
+                    <p class="developer-group">группа МО-426Б</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Supervisor Section -->
+    <section class="section-supervisor">
+        <div class="container-section">
+            <div class="section-header" data-scroll>
+                <h2>Руководитель проекта</h2>
+                <div class="header-line"></div>
+            </div>
+
+            <div class="supervisor-card" data-scroll>
+                <div class="supervisor-avatar-wrapper">
+                    <img src="{{ url_for('static', filename='img/ava.png') }}" alt="Сазонова Е. Ю." class="supervisor-avatar">
+                </div>
+                <div class="supervisor-info">
+                    <h3>Сазонова Екатерина Юрьевна</h3>
+                    <p class="supervisor-title">Кандидат технических наук, доцент</p>
+                    <p class="supervisor-role">Кафедра вычислительной математики и кибернетики</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section-features">
+        <div class="container-section">
+            <div class="section-header" data-scroll>
+                <h2>Что включает проект</h2>
+                <div class="header-line"></div>
+            </div>
+
+            <div class="features-list">
+                <div class="feature-item" data-scroll>
+                    <div class="feature-number">01</div>
+                    <h4>Управление заданиями</h4>
+                    <p>Полная база заданий с поддержкой вложений, фильтрацией по номерам и сложности</p>
+                </div>
+
+                <div class="feature-item" data-scroll>
+                    <div class="feature-number">02</div>
+                    <h4>Варианты тестирования</h4>
+                    <p>Создание и прохождение полных вариантов ЕГЭ с правильной подсчётом задач</p>
+                </div>
+
+                <div class="feature-item" data-scroll>
+                    <div class="feature-number">03</div>
+                    <h4>Отслеживание прогресса</h4>
+                    <p>Подробная статистика, анализ ошибок, рекомендации по улучшению</p>
+                </div>
+
+                <div class="feature-item" data-scroll>
+                    <div class="feature-number">04</div>
+                    <h4>Тайная комната</h4>
+                    <p>Полное управление пользователями, заданиями, вариантами и правами доступа</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <section class="section-footer">
+        <div class="container-section">
+            <div class="footer-content" data-scroll>
+                <h3>Информационная система подготовки к компьютерным выпускным экзаменам "Экзам-ON"</h3>
+                <p>Уфа, 2025</p>
+                <div class="footer-decoration"></div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/about-scroll.js') }}"></script>
+{% endblock %}
