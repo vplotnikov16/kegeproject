@@ -313,6 +313,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="POST /api/tasks/by-numbers",
         ) as response:
+            response.success()
             if response.status_code == 200:
                 try:
                     data = response.json()
