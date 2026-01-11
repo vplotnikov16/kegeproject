@@ -190,6 +190,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="POST /variants/start-exam/<id>",
         ) as response:
+            response.success()
             if response.status_code in (200, 302):
                 # Попытка извлечь attempt_id из редиректа
                 if "Location" in response.headers:
@@ -220,6 +221,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="GET /attempts/<id>",
         ) as response:
+            response.success()
             if response.status_code == 200:
                 response.success()
             elif response.status_code == 403:
@@ -242,6 +244,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="GET /attempts/<id>/data (AJAX)",
         ) as response:
+            response.success()
             if response.status_code == 200:
                 try:
                     data = response.json()
@@ -270,6 +273,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="POST /attempts/<id>/save-answer (AJAX)",
         ) as response:
+            response.success()
             if response.status_code == 200:
                 response.success()
             elif response.status_code in (403, 404):
@@ -290,6 +294,7 @@ class KegeProjectUser(HttpUser):
                 catch_response=True,
                 name="POST /attempts/<id>/finish",
         ) as response:
+            response.success()
             if response.status_code in (200, 302):
                 response.success()
             elif response.status_code in (403, 404):
