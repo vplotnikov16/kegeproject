@@ -1,6 +1,7 @@
 import random
 import json
 from typing import Dict, List, Optional
+
 from locust import HttpUser, task, tag, between, events
 
 # Конфигурация тестовых пользователей
@@ -19,6 +20,10 @@ SAMPLE_ANSWERS = [
     "RED",  # слово
     "5",
 ]
+
+# --- Инъекция "искусственных" ошибок для статистики ---
+FORCED_FAIL_RATE = 0.40  # 40% запросов в указанных группах будут помечены как failed
+REQUEST_TIMEOUT_SEC = 15  # таймаут на каждый запрос (connect/read)
 
 
 class KegeProjectUser(HttpUser):
@@ -40,13 +45,67 @@ class KegeProjectUser(HttpUser):
         self._get_csrf_token()
         self._login()
 
+    # -----------------------------
+    # Helpers for forced failures
+    # -----------------------------
+    @staticmethod
+    def _should_force_fail() -> bool:
+        return random.random() < FORCED_FAIL_RATE
+
+    def _success_or_forced_fail(self, response, group_label: str):
+        """
+        Помечает запрос как success или (с вероятностью FORCED_FAIL_RATE) как fail,
+        при этом запрос фактически уже выполнен и учтен в статистике.
+        """
+        if self._should_force_fail():
+            response.failure(f"Injected failure ({group_label}, {int(FORCED_FAIL_RATE * 100)}%)")
+        else:
+            response.success()
+
+    def _handle_status_with_optional_forced_fail(
+        self,
+        response,
+        ok_statuses,
+        allowed_statuses=None,
+        force_fail_group: Optional[str] = None,
+    ):
+        """
+        Унифицированная обработка статуса:
+        - ok_statuses: статусы, которые считаются успехом
+        - allowed_statuses: статусы, которые допустимы и тоже считаются успехом (например, 403/404)
+        - force_fail_group: если задано ("api" или "attempts"), то к успешным/допустимым ответам
+          применяется инъекция fail в 40% случаев
+        """
+        allowed_statuses = allowed_statuses or set()
+        ok_statuses = set(ok_statuses)
+        allowed_statuses = set(allowed_statuses)
+
+        if response.status_code in ok_statuses or response.status_code in allowed_statuses:
+            if force_fail_group:
+                self._success_or_forced_fail(response, force_fail_group)
+            else:
+                response.success()
+        else:
+            response.failure(f"Status code: {response.status_code}")
+
+    # -----------------------------
+    # Auth / CSRF
+    # -----------------------------
     def _get_csrf_token(self):
         """Получение CSRF токена с главной страницы."""
-        with self.client.get("/", catch_response=True, name="GET /") as response:
-            # Всегда считаем успешным, но попытку извлечения токена оставляем.
-            if 'csrf_token' in response.cookies:
-                self.csrf_token = response.cookies['csrf_token']
-            response.success()
+        with self.client.get(
+            "/",
+            catch_response=True,
+            name="GET /",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            if response.status_code == 200:
+                # Попытка извлечь CSRF токен из куки или мета-тега
+                if "csrf_token" in response.cookies:
+                    self.csrf_token = response.cookies["csrf_token"]
+                response.success()
+            else:
+                response.failure(f"Failed to get CSRF token: {response.status_code}")
 
     def _login(self):
         """Аутентификация пользователя."""
@@ -60,24 +119,46 @@ class KegeProjectUser(HttpUser):
             },
             catch_response=True,
             name="POST /login",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            # Всегда считаем успешным (для 100% success статистики)
-            self.logged_in = True
-            response.success()
+            if response.status_code in (200, 302):  # 302 = redirect после успешного логина
+                self.logged_in = True
+                response.success()
+            else:
+                response.failure(f"Login failed: {response.status_code}")
 
+    # -----------------------------
+    # Public pages
+    # -----------------------------
     @tag("public", "read")
     @task(10)
     def view_homepage(self):
         """Просмотр главной страницы (дашборд)."""
-        with self.client.get("/", catch_response=True, name="GET / (homepage)") as response:
-            response.success()
+        with self.client.get(
+            "/",
+            catch_response=True,
+            name="GET / (homepage)",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
     @tag("public", "read")
     @task(8)
     def view_tasks_list(self):
         """Просмотр списка всех задач."""
-        with self.client.get("/tasks", catch_response=True, name="GET /tasks") as response:
-            response.success()
+        with self.client.get(
+            "/tasks",
+            catch_response=True,
+            name="GET /tasks",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
     @tag("public", "read")
     @task(5)
@@ -88,15 +169,29 @@ class KegeProjectUser(HttpUser):
             f"/tasks/view/{task_id}",
             catch_response=True,
             name="GET /tasks/view/<id>",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            # 404 допускается, как и было
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+                allowed_statuses={404},
+            )
 
     @tag("public", "read")
     @task(7)
     def view_variants_list(self):
         """Просмотр списка вариантов."""
-        with self.client.get("/variants", catch_response=True, name="GET /variants") as response:
-            response.success()
+        with self.client.get(
+            "/variants",
+            catch_response=True,
+            name="GET /variants",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
     @tag("public", "read")
     @task(4)
@@ -107,9 +202,18 @@ class KegeProjectUser(HttpUser):
             f"/variants/view/{variant_id}",
             catch_response=True,
             name="GET /variants/view/<id>",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            # 404 допускается, как и было
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+                allowed_statuses={404},
+            )
 
+    # -----------------------------
+    # Profile pages (auth)
+    # -----------------------------
     @tag("auth", "read")
     @task(6)
     def view_profile(self):
@@ -117,8 +221,16 @@ class KegeProjectUser(HttpUser):
         if not self.logged_in:
             return
 
-        with self.client.get("/profile", catch_response=True, name="GET /profile") as response:
-            response.success()
+        with self.client.get(
+            "/profile",
+            catch_response=True,
+            name="GET /profile",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
     @tag("auth", "read")
     @task(3)
@@ -127,8 +239,16 @@ class KegeProjectUser(HttpUser):
         if not self.logged_in:
             return
 
-        with self.client.get("/profile/stats", catch_response=True, name="GET /profile/stats") as response:
-            response.success()
+        with self.client.get(
+            "/profile/stats",
+            catch_response=True,
+            name="GET /profile/stats",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
     @tag("auth", "read")
     @task(2)
@@ -141,9 +261,16 @@ class KegeProjectUser(HttpUser):
             "/profile/my-tasks",
             catch_response=True,
             name="GET /profile/my-tasks",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
+    # -----------------------------
+    # Exam flows (/attempts...) -> inject 40% fails
+    # -----------------------------
     @tag("auth", "exam")
     @task(5)
     def start_exam_attempt(self):
@@ -156,22 +283,29 @@ class KegeProjectUser(HttpUser):
             f"/variants/start-exam/{variant_id}",
             catch_response=True,
             name="POST /variants/start-exam/<id>",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            # Всегда успех (но attempt_id по возможности попробуем извлечь)
-            if "Location" in response.headers:
-                location = response.headers["Location"]
-                if "/attempts/" in location:
-                    try:
-                        self.current_attempt_id = int(location.split("/attempts/")[1].split("/")[0])
-                    except (IndexError, ValueError):
-                        pass
-            response.success()
+            if response.status_code in (200, 302):
+                # Попытка извлечь attempt_id из редиректа
+                if "Location" in response.headers:
+                    location = response.headers["Location"]
+                    if "/attempts/" in location:
+                        try:
+                            self.current_attempt_id = int(location.split("/attempts/")[1].split("/")[0])
+                        except (IndexError, ValueError):
+                            pass
+                response.success()
+            elif response.status_code == 404:
+                response.success()  # вариант не найден - это OK
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
     @tag("auth", "exam")
     @task(3)
     def view_attempt_page(self):
         """Просмотр страницы попытки (интерфейс экзамена)."""
         if not self.logged_in or not self.current_attempt_id:
+            # Используем случайный attempt_id для теста
             attempt_id = random.randint(1, 300)
         else:
             attempt_id = self.current_attempt_id
@@ -180,8 +314,15 @@ class KegeProjectUser(HttpUser):
             f"/attempts/{attempt_id}",
             catch_response=True,
             name="GET /attempts/<id>",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            # 200 OK, 403/404 допустимы -> но 40% таких ответов хотим считать "failed"
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+                allowed_statuses={403, 404},
+                force_fail_group="attempts",
+            )
 
     @tag("auth", "exam", "ajax")
     @task(4)
@@ -195,13 +336,20 @@ class KegeProjectUser(HttpUser):
             f"/attempts/{attempt_id}/data",
             catch_response=True,
             name="GET /attempts/<id>/data (AJAX)",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            # JSON может быть невалидным — игнорируем, но запрос считаем успешным
-            try:
-                _ = response.json()
-            except (json.JSONDecodeError, ValueError):
-                pass
-            response.success()
+            if response.status_code == 200:
+                try:
+                    _ = response.json()
+                    # Успех, но хотим инъекцию fail 40%
+                    self._success_or_forced_fail(response, "attempts")
+                except json.JSONDecodeError:
+                    response.failure("Invalid JSON response")
+            elif response.status_code in (403, 404):
+                # Допустимо, но хотим инъекцию fail 40%
+                self._success_or_forced_fail(response, "attempts")
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
     @tag("auth", "exam", "ajax", "write")
     @task(2)
@@ -219,8 +367,14 @@ class KegeProjectUser(HttpUser):
             json={"varianttaskid": variant_task_id, "answertext": answer_text},
             catch_response=True,
             name="POST /attempts/<id>/save-answer (AJAX)",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            if response.status_code == 200:
+                self._success_or_forced_fail(response, "attempts")
+            elif response.status_code in (403, 404):
+                self._success_or_forced_fail(response, "attempts")  # не наша попытка - допускаем, но инъектим
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
     @tag("auth", "exam", "write")
     @task(1)
@@ -234,9 +388,18 @@ class KegeProjectUser(HttpUser):
             f"/attempts/{attempt_id}/finish",
             catch_response=True,
             name="POST /attempts/<id>/finish",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            response.success()
+            if response.status_code in (200, 302):
+                self._success_or_forced_fail(response, "attempts")
+            elif response.status_code in (403, 404):
+                self._success_or_forced_fail(response, "attempts")
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
+    # -----------------------------
+    # API (/api/...) -> inject 40% fails
+    # -----------------------------
     @tag("api", "read")
     @task(3)
     def api_get_tasks_by_numbers(self):
@@ -247,20 +410,31 @@ class KegeProjectUser(HttpUser):
             json={"numbers": numbers},
             catch_response=True,
             name="POST /api/tasks/by-numbers",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            # JSON может быть невалидным — игнорируем, но запрос считаем успешным
-            try:
-                _ = response.json()
-            except (json.JSONDecodeError, ValueError):
-                pass
-            response.success()
+            if response.status_code == 200:
+                try:
+                    _ = response.json()
+                    self._success_or_forced_fail(response, "api")
+                except json.JSONDecodeError:
+                    response.failure("Invalid JSON response")
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
     @tag("public", "read")
     @task(2)
     def view_about_page(self):
         """Просмотр страницы О проекте."""
-        with self.client.get("/about", catch_response=True, name="GET /about") as response:
-            response.success()
+        with self.client.get(
+            "/about",
+            catch_response=True,
+            name="GET /about",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            self._handle_status_with_optional_forced_fail(
+                response,
+                ok_statuses={200},
+            )
 
 
 class AdminUser(KegeProjectUser):
@@ -278,10 +452,13 @@ class AdminUser(KegeProjectUser):
             },
             catch_response=True,
             name="POST /login (admin)",
+            timeout=REQUEST_TIMEOUT_SEC,
         ) as response:
-            # Всегда считаем успешным
-            self.logged_in = True
-            response.success()
+            if response.status_code in (200, 302):
+                self.logged_in = True
+                response.success()
+            else:
+                response.failure(f"Admin login failed: {response.status_code}")
 
     @tag("admin", "read")
     @task(5)
@@ -290,8 +467,19 @@ class AdminUser(KegeProjectUser):
         if not self.logged_in:
             return
 
-        with self.client.get("/admin/", catch_response=True, name="GET /admin/") as response:
-            response.success()
+        with self.client.get(
+            "/admin/",
+            catch_response=True,
+            name="GET /admin/",
+            timeout=REQUEST_TIMEOUT_SEC,
+        ) as response:
+            # Это НЕ /api и НЕ /attempts, поэтому здесь инъекцию не делаем
+            if response.status_code == 200:
+                response.success()
+            elif response.status_code == 403:
+                response.failure("Admin access denied")
+            else:
+                response.failure(f"Status code: {response.status_code}")
 
 
 @events.test_start.add_listener
